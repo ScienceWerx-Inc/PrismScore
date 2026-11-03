@@ -154,14 +154,14 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
-                Company Workspace
+                PrismScore™ Workspace
               </span>
               <span className="text-xs text-slate-500 font-medium">
                 {company.industry} • {company.sizeBand} • {company.country}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
-              {company.name} Executive Dashboard
+              {company.name} Prism™ Leadership Dashboard
             </h1>
           </div>
 

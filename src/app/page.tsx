@@ -33,16 +33,16 @@ export default function LandingPage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white pt-20 pb-28">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-600/20 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-300 text-xs font-semibold tracking-wide uppercase mb-6 animate-pulse">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-            Modeled on iStartup Score — Transparent & Published Formula
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-300 text-xs font-semibold tracking-wide uppercase mb-6 animate-pulse">
+            <Compass className="w-3.5 h-3.5 text-brand-400" />
+            PrismScore™ by ScienceWerx — Published 500-pt Benchmark
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-4xl mx-auto leading-tight sm:leading-none">
-            Measure how well your company <span className="bg-gradient-to-r from-blue-400 via-brand-400 to-indigo-300 bg-clip-text text-transparent">understands and uses AI</span>
+            Refract your company's <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-300 bg-clip-text text-transparent">AI readiness & leadership alignment</span>
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
             Find the real knowledge gaps, leadership misalignment, and hidden adoption resistance across your C-level team. 
-            Get an instant free score out of 500 in 10 minutes.
+            Get your instant free PrismScore out of 500 in 10 minutes.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -302,7 +302,7 @@ export default function LandingPage() {
           <div className="text-center max-w-3xl mx-auto mb-14">
             <h2 className="text-xs font-bold text-brand-600 uppercase tracking-widest">Transparent Deliverables</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              Free Score vs. Comprehensive Company Report
+              Free PrismScore vs. Full Executive Report
             </p>
             <p className="mt-3 text-base text-slate-600">
               Start with a 100% free score. Upgrade only when you want the complete executive action plan and PDF.

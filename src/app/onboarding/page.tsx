@@ -141,13 +141,13 @@ export default function OnboardingPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Step 1 of 2: Company Setup
+            <Sparkles className="w-3.5 h-3.5" /> Step 1 of 2: PrismScore™ Setup
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
             Company & Leadership Onboarding
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Tell us about your organization and configure your leadership diagnostic.
+            Configure your organization profile and set up your confidential Prism C-level diagnostic.
           </p>
         </div>
 

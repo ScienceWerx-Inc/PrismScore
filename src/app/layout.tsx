@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Link from 'next/link';
-import { Sparkles, BarChart3, Users, BookOpen, Layers } from 'lucide-react';
+import { Sparkles, BarChart3, Users, BookOpen, Layers, Compass } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'AI Literacy Assessment Platform | ScienceWerx',
-  description: 'Measure corporate AI literacy, align C-level leadership, uncover resistance, and generate tailored training paths.',
+  title: 'PrismScore | Enterprise AI Literacy & Leadership Alignment by ScienceWerx',
+  description: 'Prism AI refracts company AI literacy, C-level alignment, and hidden resistance into a transparent 500-point benchmark and tailored learning tracks.',
 };
 
 export default function RootLayout({
@@ -19,17 +19,17 @@ export default function RootLayout({
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-brand-500/25 group-hover:scale-105 transition-transform">
+                <Compass className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="leading-tight tracking-tight flex items-center gap-1.5">
-                  AI Literacy Score
-                  <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
+                <span className="leading-tight tracking-tight flex items-center gap-1.5 font-black text-slate-950">
+                  Prism<span className="text-brand-600">Score</span>
+                  <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
                     ScienceWerx
                   </span>
                 </span>
-                <span className="text-xs text-slate-400 font-normal">Executive & Enterprise Diagnostic</span>
+                <span className="text-[11px] text-slate-400 font-normal">Enterprise AI Literacy & Alignment</span>
               </div>
             </Link>
 
@@ -45,7 +45,7 @@ export default function RootLayout({
                 className="px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
               >
                 <BarChart3 className="w-4 h-4 text-brand-600" />
-                Executive Dashboard
+                Leadership Heatmaps
               </Link>
               <Link
                 href="/dashboard/three-sixty"
@@ -66,7 +66,7 @@ export default function RootLayout({
             <div className="flex items-center gap-3">
               <Link
                 href="/onboarding"
-                className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm shadow-brand-600/30 transition-all hover:shadow"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-sm shadow-brand-600/30 transition-all hover:shadow"
               >
                 Start Assessment
               </Link>
@@ -80,11 +80,11 @@ export default function RootLayout({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2 font-bold text-white text-base">
-                <Sparkles className="w-4 h-4 text-brand-400" />
-                ScienceWerx AI Literacy
+                <Compass className="w-4 h-4 text-brand-400" />
+                PrismScore™ by ScienceWerx
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Empowering small & medium enterprises with rigorous AI literacy benchmarking, leadership alignment heatmaps, and structured upskilling gap profiles.
+                Refracting enterprise AI readiness into transparent dimensions, C-level alignment heatmaps, and structured upskilling gap profiles.
               </p>
               <div className="text-xs text-slate-500">
                 Modeled after the transparent scoring standards of iStartup Score.
@@ -94,7 +94,7 @@ export default function RootLayout({
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Diagnostic Tools</div>
               <ul className="space-y-2 text-xs">
-                <li><Link href="/onboarding" className="hover:text-white transition-colors">Company Assessment (25 Qs)</Link></li>
+                <li><Link href="/onboarding" className="hover:text-white transition-colors">Prism Company Assessment (25 Qs)</Link></li>
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">C-Level Alignment Heatmap</Link></li>
                 <li><Link href="/dashboard" className="hover:text-white transition-colors">Executive Resistance Radar</Link></li>
                 <li><Link href="/dashboard/three-sixty" className="hover:text-white transition-colors">360 Staff Diagnostic</Link></li>
@@ -104,9 +104,9 @@ export default function RootLayout({
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Transparency & Ethics</div>
               <ul className="space-y-2 text-xs">
-                <li><span className="text-slate-300">Published Scoring Formula:</span> 500-pt Weighted</li>
+                <li><span className="text-slate-300">Published Formula:</span> 500-pt Weighted</li>
                 <li><span className="text-slate-300">Privacy Safeguards:</span> Individual C-level confidential</li>
-                <li><span className="text-slate-300">360 Anonymity Threshold:</span> Minimum 5 respondents</li>
+                <li><span className="text-slate-300">360 Anonymity:</span> Minimum 5 respondents</li>
                 <li><span className="text-slate-300">Self-Reported Limit:</span> Non-verifying audit</li>
               </ul>
             </div>
@@ -114,7 +114,7 @@ export default function RootLayout({
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">ScienceWerx Ecosystem</div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                Seamlessly connects diagnostic gap profiles with customized AI curriculum generation and enterprise solution integration.
+                Seamlessly connects PrismScore gap profiles with customized AI curriculum generation and enterprise solution integration.
               </p>
               <div className="text-[11px] text-slate-500">
                 © {new Date().getFullYear()} ScienceWerx. All rights reserved.
@@ -126,4 +126,3 @@ export default function RootLayout({
     </html>
   );
 }
-

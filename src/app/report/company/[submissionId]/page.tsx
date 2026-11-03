@@ -132,16 +132,16 @@ export default function CompanyReportPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 no-print">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
-                Official Company Assessment Result
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                Official PrismScore™ Result
               </span>
               <span className="text-slate-400">•</span>
               <span className="text-xs text-slate-500">
                 Generated {new Date(submission.completedAt || Date.now()).toLocaleDateString()}
               </span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight sm:text-3xl">
-              {company?.name || 'Company'} AI Literacy Report
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight sm:text-3xl mt-1">
+              {company?.name || 'Company'} PrismScore™ Executive Report
             </h1>
           </div>
 
@@ -170,7 +170,7 @@ export default function CompanyReportPage() {
             {/* Score circle */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-900 text-white text-center shadow-inner">
               <span className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
-                Published Scoring Formula
+                Official PrismScore™
               </span>
               <div className="text-6xl font-black tracking-tighter text-blue-400">
                 {result.totalScore}
