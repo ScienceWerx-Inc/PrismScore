@@ -1,0 +1,208 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Company {
+  id            String         @id @default(uuid())
+  name          String
+  industry      String
+  sizeBand      String
+  country       String
+  planStatus    String         @default("FREE") // FREE, PAID
+  paymentStatus String         @default("UNPAID") // UNPAID, PAID
+  minExecutiveThreshold Int   @default(3)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  users         User[]
+  invitations   Invitation[]
+  submissions   Submission[]
+  payments      Payment[]
+}
+
+model User {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  name             String
+  role             String          // ADMIN, EXECUTIVE, STAFF, PLATFORM_ADMIN
+  companyId        String
+  company          Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  execRoleTitle    String?         // CEO, CFO, COO, CTO, CMO, CHRO, OTHER
+  department       String?         // For 360 staff
+  alsoTakesClevel  Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  submissions      Submission[]
+  gapRecords       GapRecord[]
+  concernProfiles  ConcernProfile[]
+}
+
+model Invitation {
+  id         String    @id @default(uuid())
+  companyId  String
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String?
+  email      String
+  role       String    // EXECUTIVE, STAFF
+  execRole   String?   // CEO, CFO, COO, CTO, CMO, CHRO, OTHER
+  department String?
+  token      String    @unique
+  status     String    @default("PENDING") // PENDING, SENT, ACCEPTED, EXPIRED
+  invitedBy  String
+  sentAt     DateTime  @default(now())
+  expiresAt  DateTime?
+
+  @@index([companyId])
+  @@index([token])
+}
+
+model AssessmentType {
+  id          String       @id // COMPANY, CLEVEL, THREE_SIXTY
+  name        String
+  description String
+  version     String       @default("1.0")
+  activeFlag  Boolean      @default(true)
+
+  dimensions  Dimension[]
+  questions   Question[]
+  submissions Submission[]
+}
+
+model Dimension {
+  id               String         @id // e.g. STRATEGY, USE_VALUE, DATA_TECH, GOVERNANCE, PEOPLE
+  assessmentTypeId String
+  assessmentType   AssessmentType @relation(fields: [assessmentTypeId], references: [id], onDelete: Cascade)
+  name             String
+  weight           Float          @default(0.2) // e.g. 0.25 for Strategy
+  domain           String?        // For C-level: "Strategic Opportunity", "Risk & Legal", etc.
+  description      String?
+  order            Int            @default(0)
+
+  questions        Question[]
+  gapRecords       GapRecord[]
+}
+
+model Question {
+  id               String         @id
+  assessmentTypeId String
+  assessmentType   AssessmentType @relation(fields: [assessmentTypeId], references: [id], onDelete: Cascade)
+  dimensionId      String
+  dimension        Dimension      @relation(fields: [dimensionId], references: [id], onDelete: Cascade)
+  layer            String?        // KNOWLEDGE, AWARENESS, RESISTANCE
+  text             String
+  scenarioContext  String?
+  order            Int
+  roleFilter       String?        // ALL, CEO, CFO, COO, CTO, CMO, CHRO
+
+  options          Option[]
+  responses        Response[]
+}
+
+model Option {
+  id           String     @id
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text         String
+  points       Int        @default(0) // 0 to 3 for company assessment
+  mappedLevel  String?    // UNAWARE, AWARE, PRACTICING, PROFICIENT, LEADING
+  concernType  String?    // RISK_LIABILITY, LOSS_OF_CONTROL, DOUBT_ABOUT_RETURN, ROLE_JOB_IMPACT, DATA_SECURITY, ETHICS, LACK_OF_TIME, PAST_BAD_EXP
+  order        Int        @default(0)
+
+  responses    Response[]
+}
+
+model Submission {
+  id               String         @id @default(uuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId        String
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assessmentTypeId String
+  assessmentType   AssessmentType @relation(fields: [assessmentTypeId], references: [id], onDelete: Cascade)
+  version          String         @default("1.0")
+  status           String         @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED
+  startedAt        DateTime       @default(now())
+  completedAt      DateTime?
+
+  responses        Response[]
+  result           Result?
+
+  @@index([companyId])
+  @@index([userId])
+}
+
+model Response {
+  id           String     @id @default(uuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionId     String
+  option       Option     @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([submissionId, questionId])
+}
+
+model Result {
+  id                      String     @id @default(uuid())
+  submissionId            String     @unique
+  submission              Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  totalScore              Float      // 0 to 500
+  band                    String     // UNAWARE, EXPLORING, ESTABLISHED, AI_LED
+  perDimensionPercentages String     // JSON object { STRATEGY: 80, ... }
+  strengths               String     // JSON array of strings
+  gaps                    String     // JSON array of strings
+  priorityActions         String     // JSON array of objects { title, why, nextStep, impact }
+  createdAt               DateTime   @default(now())
+}
+
+model GapRecord {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dimensionId  String
+  dimension    Dimension @relation(fields: [dimensionId], references: [id], onDelete: Cascade)
+  currentLevel String    // UNAWARE, AWARE, PRACTICING, PROFICIENT, LEADING
+  targetLevel  String    // UNAWARE, AWARE, PRACTICING, PROFICIENT, LEADING
+  gap          Int       // numeric difference: target - current
+  priority     String    // HIGH, MEDIUM, LOW
+  createdAt    DateTime  @default(now())
+}
+
+model ConcernProfile {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concernType String   // RISK_LIABILITY, LOSS_OF_CONTROL, DOUBT_ABOUT_RETURN, ROLE_JOB_IMPACT, DATA_SECURITY, ETHICS, LACK_OF_TIME, PAST_BAD_EXP
+  strength    Float    // 0.0 to 1.0 or frequency count
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  amount            Int      @default(149) // USD
+  currency          String   @default("USD")
+  providerReference String   @default("simulated_charge")
+  status            String   @default("COMPLETED")
+  createdAt         DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actor     String
+  action    String
+  entity    String
+  details   String?
+  timestamp DateTime @default(now())
+}
+
