@@ -167,7 +167,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
       { id: 'cu3_0', text: 'No pilots or active deployments have been attempted.', points: 0, order: 0 },
       { id: 'cu3_1', text: 'Multiple speculative experiments, but none have transitioned into recurring production.', points: 1, order: 1 },
       { id: 'cu3_2', text: 'At least 2 to 3 successfully productionized use cases operating continuously.', points: 2, order: 2 },
-      { id: 'cu3_3', text: 'A repeatable stage-gate pipeline that regularly tests, validates, and promotes pilots to production.', points: 3, order: 3 },
+      { id: 'cu3_3', text: 'A structured review process that systematically tests, validates, and rolls out pilots to production.', points: 3, order: 3 },
     ],
   },
   {
@@ -208,7 +208,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
       { id: 'cd1_0', text: 'Fragmented across personal laptops, locked PDFs, and chaotic email threads.', points: 0, order: 0 },
       { id: 'cd1_1', text: 'Central cloud storage exists, but files are unindexed, unorganized, and heavily duplicate.', points: 1, order: 1 },
       { id: 'cd1_2', text: 'Clean shared repositories (e.g. Notion, Google Drive, CRM) with searchable standards.', points: 2, order: 2 },
-      { id: 'cd1_3', text: 'Unified knowledge base with semantic search, vector embeddings, and automated sync.', points: 3, order: 3 },
+      { id: 'cd1_3', text: 'Unified company knowledge base with intelligent natural-language search and automated real-time syncing.', points: 3, order: 3 },
     ],
   },
   {
@@ -234,7 +234,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
       { id: 'cd3_0', text: 'Completely unmonitored; leadership has no visibility into what tools staff use.', points: 0, order: 0 },
       { id: 'cd3_1', text: 'A blanket verbal policy telling people "don\'t use AI", which employees routinely bypass.', points: 1, order: 1 },
       { id: 'cd3_2', text: 'Clear roster of approved vs banned tools with network endpoint visibility.', points: 2, order: 2 },
-      { id: 'cd3_3', text: 'Automated DLP (Data Loss Prevention) controls alongside sanctioned alternatives that satisfy staff needs.', points: 3, order: 3 },
+      { id: 'cd3_3', text: 'Automated data leakage safeguards alongside approved, company-provided tools that satisfy employee needs.', points: 3, order: 3 },
     ],
   },
   {
@@ -260,7 +260,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
       { id: 'cd5_0', text: 'No vetting; teams install browser extensions and apps without review.', points: 0, order: 0 },
       { id: 'cd5_1', text: 'Informal check on whether the vendor looks reputable.', points: 1, order: 1 },
       { id: 'cd5_2', text: 'Standard vendor security checklist including SOC2, data retention, and training data terms.', points: 2, order: 2 },
-      { id: 'cd5_3', text: 'Rigorous benchmark evaluation testing accuracy, latency, security compliance, and zero-data-retention.', points: 3, order: 3 },
+      { id: 'cd5_3', text: 'Rigorous vendor evaluation verifying accuracy, response speed, security compliance, and guarantees that vendor models do not retain or train on our data.', points: 3, order: 3 },
     ],
   },
 
@@ -288,7 +288,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
       { id: 'cg2_0', text: 'Staff routinely input customer names, code, or finances into public AI tools.', points: 0, order: 0 },
       { id: 'cg2_1', text: 'Staff are verbally instructed to redact names, but compliance is unverified.', points: 1, order: 1 },
       { id: 'cg2_2', text: 'Zero-data-retention agreements and enterprise tenant privacy settings enforced.', points: 2, order: 2 },
-      { id: 'cg2_3', text: 'Automated anonymization pipelines, differential privacy, and strictly private isolated inference.', points: 3, order: 3 },
+      { id: 'cg2_3', text: 'Automated data redaction pipelines, strict mathematical privacy guarantees, and dedicated private enterprise environments.', points: 3, order: 3 },
     ],
   },
   {

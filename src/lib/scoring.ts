@@ -53,6 +53,7 @@ export interface ScoringResult {
   dimensionPercentages: Record<DimensionKey, number>; // 0 to 100
   dimensionRawPoints: Record<DimensionKey, number>;
   strengths: string[];
+  moderateGaps: string[];
   criticalGaps: string[];
   priorityActions: Array<{
     dimension: string;
@@ -74,6 +75,7 @@ export function calculateReadinessBand(score: number): ReadinessBand {
  * Calculates Company Assessment score based on the specification formula:
  * Score = 5 * (Strategy * 0.25 + Use * 0.20 + Data * 0.20 + Governance * 0.20 + People * 0.15)
  * Where each dimension is on a 0 to 100 percentage scale.
+ * Note: Uses unrounded exact fractional weights during accumulation to avoid premature rounding drift.
  */
 export function calculateCompanyScore(
   rawPoints: Record<DimensionKey, number>
@@ -86,81 +88,97 @@ export function calculateCompanyScore(
     PEOPLE: 0,
   };
 
-  let weightedSum = 0;
+  let exactWeightedSum = 0;
 
   for (const key of Object.keys(DIMENSIONS) as DimensionKey[]) {
     const dim = DIMENSIONS[key];
     const earned = Math.max(0, Math.min(dim.maxPoints, rawPoints[key] || 0));
-    const pct = Math.round((earned / dim.maxPoints) * 100 * 10) / 10;
-    dimensionPercentages[key] = pct;
-    weightedSum += pct * dim.weight;
+    const exactPct = (earned / dim.maxPoints) * 100;
+    dimensionPercentages[key] = Math.round(exactPct * 10) / 10;
+    exactWeightedSum += exactPct * dim.weight;
   }
 
-  // Score = 5 * weightedSum
-  const totalScore = Math.round(5 * weightedSum * 10) / 10;
+  // Exact composite score: 5 * exactWeightedSum, rounded to 2 decimal places for published formula precision
+  const totalScore = Math.round(5 * exactWeightedSum * 100) / 100;
   const band = calculateReadinessBand(totalScore);
 
-  // Derive strengths, gaps, and priority actions
+  // Derive 3-tier analysis: Strengths (>=70%), Moderate Gaps (41-69%), Critical Gaps (<=40%)
   const strengths: string[] = [];
+  const moderateGaps: string[] = [];
   const criticalGaps: string[] = [];
   const priorityActions: ScoringResult['priorityActions'] = [];
+
+  const dimActionBank: Record<
+    DimensionKey,
+    { action: string; whyItMatters: string; nextStep: string; scoreImpact: string }
+  > = {
+    STRATEGY: {
+      action: 'Establish formal AI steering and executive ownership',
+      whyItMatters: 'Without executive alignment, AI experiments stall in fragmented silos without ROI.',
+      nextStep: 'Convene a half-day executive workshop to define top 2-3 AI use cases and assign an executive sponsor.',
+      scoreImpact: '+25 to +40 points',
+    },
+    USE_VALUE: {
+      action: 'Transition from ad-hoc prompting to tracked workflow pilots',
+      whyItMatters: 'Unmeasured AI usage fails to deliver predictable commercial value.',
+      nextStep: 'Benchmark 2 core business workflows and measure time-saved / quality metrics over 30 days.',
+      scoreImpact: '+20 to +35 points',
+    },
+    DATA_TECH: {
+      action: 'Unify internal data access and address shadow AI tools',
+      whyItMatters: 'Fragmented data prevents contextual AI models and creates proprietary leak hazards.',
+      nextStep: 'Audit active AI tools in use and centralize access through vetted enterprise gateways.',
+      scoreImpact: '+20 to +35 points',
+    },
+    GOVERNANCE: {
+      action: 'Publish an internal AI usage & data handling policy',
+      whyItMatters: 'Protects the company from copyright, confidentiality breaches, and regulatory liabilities.',
+      nextStep: 'Deploy a clear 1-page acceptable use policy and establish a vendor security vetting checklist.',
+      scoreImpact: '+20 to +30 points',
+    },
+    PEOPLE: {
+      action: 'Launch role-based AI literacy and workflow training',
+      whyItMatters: 'Tools alone do not create value; employee confidence and skill drive sustained productivity.',
+      nextStep: 'Roll out practical prompt engineering and automation playbooks tailored to departments.',
+      scoreImpact: '+15 to +25 points',
+    },
+  };
 
   for (const key of Object.keys(DIMENSIONS) as DimensionKey[]) {
     const dim = DIMENSIONS[key];
     const pct = dimensionPercentages[key];
 
     if (pct >= 70) {
-      strengths.push(`${dim.name} (${pct}%): Strong baseline and operational foundation.`);
+      strengths.push(`${dim.name} (${pct}%): Strong operational baseline and established practices.`);
     } else if (pct <= 40) {
-      criticalGaps.push(`${dim.name} (${pct}%): Underdeveloped practices expose the organization to inefficiency and blind spots.`);
-    }
-
-    // Add actionable recommendation based on threshold
-    if (pct < 60) {
-      if (key === 'STRATEGY') {
-        priorityActions.push({
-          dimension: dim.name,
-          action: 'Establish formal AI steering and executive ownership',
-          whyItMatters: 'Without executive alignment, AI experiments stall in fragmented silos without ROI.',
-          nextStep: 'Convene a half-day executive workshop to define high-impact AI use cases and appoint a sponsor.',
-          scoreImpact: '+25 to +40 points',
-        });
-      } else if (key === 'USE_VALUE') {
-        priorityActions.push({
-          dimension: dim.name,
-          action: 'Transition from ad-hoc prompting to tracked workflow pilots',
-          whyItMatters: 'Unmeasured AI usage fails to deliver predictable commercial value.',
-          nextStep: 'Benchmark 2 core business workflows and measure time-saved / quality metrics over 30 days.',
-          scoreImpact: '+20 to +35 points',
-        });
-      } else if (key === 'DATA_TECH') {
-        priorityActions.push({
-          dimension: dim.name,
-          action: 'Unify internal data access and address shadow AI tools',
-          whyItMatters: 'Fragmented data prevents contextual AI models and creates proprietary leak hazards.',
-          nextStep: 'Audit active AI tools in use and centralize access through vetted enterprise gateways.',
-          scoreImpact: '+20 to +35 points',
-        });
-      } else if (key === 'GOVERNANCE') {
-        priorityActions.push({
-          dimension: dim.name,
-          action: 'Publish an internal AI usage & data handling policy',
-          whyItMatters: 'Protects the company from copyright, confidentiality breaches, and regulatory liabilities.',
-          nextStep: 'Deploy a clear 1-page acceptable use policy and establish a vendor security vetting checklist.',
-          scoreImpact: '+20 to +30 points',
-        });
-      } else if (key === 'PEOPLE') {
-        priorityActions.push({
-          dimension: dim.name,
-          action: 'Launch role-based AI literacy and workflow training',
-          whyItMatters: 'Tools alone do not create value; employee confidence and skill drive sustained productivity.',
-          nextStep: 'Roll out practical prompt engineering and automation playbooks tailored to departments.',
-          scoreImpact: '+15 to +25 points',
-        });
-      }
+      criticalGaps.push(`${dim.name} (${pct}%): Underdeveloped practices expose the organization to significant operational risk.`);
+    } else {
+      moderateGaps.push(`${dim.name} (${pct}%): Developing baseline requiring targeted operational refinement.`);
     }
   }
 
+  // Sort dimensions ascending by score so recommendations ALWAYS target the weakest areas first
+  const sortedDimKeys = (Object.keys(DIMENSIONS) as DimensionKey[]).sort(
+    (a, b) => (dimensionPercentages[a] || 0) - (dimensionPercentages[b] || 0)
+  );
+
+  // Add recommendations for all dimensions below 70%, starting from lowest
+  for (const key of sortedDimKeys) {
+    const pct = dimensionPercentages[key];
+    if (pct < 70) {
+      const dim = DIMENSIONS[key];
+      const template = dimActionBank[key];
+      priorityActions.push({
+        dimension: dim.name,
+        action: template.action,
+        whyItMatters: template.whyItMatters,
+        nextStep: template.nextStep,
+        scoreImpact: template.scoreImpact,
+      });
+    }
+  }
+
+  // If organization scores >=70% across all 5 dimensions, suggest frontier scaling
   if (priorityActions.length === 0) {
     priorityActions.push({
       dimension: 'Strategy and Leadership',
@@ -177,6 +195,7 @@ export function calculateCompanyScore(
     dimensionPercentages,
     dimensionRawPoints: { ...rawPoints },
     strengths,
+    moderateGaps,
     criticalGaps,
     priorityActions,
   };

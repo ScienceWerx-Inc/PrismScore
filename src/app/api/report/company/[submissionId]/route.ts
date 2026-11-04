@@ -68,62 +68,108 @@ export async function GET(
     if (!submission || !submission.result) {
       const defaultPoints: Record<DimensionKey, number> = {
         STRATEGY: 11,
-        USE_VALUE: 10,
-        DATA_TECH: 9,
-        GOVERNANCE: 10,
-        PEOPLE: 10,
+        USE_VALUE: 9,
+        DATA_TECH: 10,
+        GOVERNANCE: 11,
+        PEOPLE: 9,
       };
       const fallbackScoring = calculateCompanyScore(defaultPoints);
 
-      const builtResponses = COMPANY_QUESTIONS.map((q, idx) => {
-        const opt = q.options[Math.min(idx % 4, q.options.length - 1)];
+      const builtResponses = COMPANY_QUESTIONS.map((q) => {
+        const opt = q.options[Math.min(q.order % 4, q.options.length - 1)];
         return {
           id: `resp_${q.id}`,
           questionId: q.id,
           optionId: opt.id,
-          question: { id: q.id, text: q.text, dimensionId: q.dimensionId },
+          question: { id: q.id, text: q.text, dimensionId: q.dimensionId, order: q.order },
           option: { id: opt.id, text: opt.text, points: opt.points ?? 2 },
         };
       });
+
+      const fallbackCompany = {
+        id: 'comp_default',
+        name: 'Executive Assessment',
+        industry: 'Technology & Services',
+        sizeBand: '11-50 employees',
+        country: 'United States',
+        planStatus: 'FREE',
+      };
+
+      const fallbackGaps = (fallbackScoring.criticalGaps && fallbackScoring.criticalGaps.length > 0)
+        ? fallbackScoring.criticalGaps
+        : (fallbackScoring.moderateGaps || []);
 
       return NextResponse.json({
         submission: {
           id: submissionId,
           status: 'COMPLETED',
           completedAt: new Date().toISOString(),
-          company: {
-            id: 'comp_default',
-            name: 'Executive Assessment',
-            industry: 'Technology & Services',
-            sizeBand: '11-50 employees',
-            country: 'United States',
-            planStatus: 'FREE',
-          },
-          responses: builtResponses,
+          company: fallbackCompany,
+          responses: builtResponses.slice(0, 3), // Gated preview responses for free tier
         },
         result: {
           totalScore: fallbackScoring.totalScore,
           band: fallbackScoring.band,
           perDimensionPercentages: fallbackScoring.dimensionPercentages,
-          strengths: fallbackScoring.strengths,
-          gaps: fallbackScoring.criticalGaps,
-          priorityActions: fallbackScoring.priorityActions,
+          strengths: fallbackScoring.strengths.slice(0, 1),
+          gaps: fallbackGaps.slice(0, 1),
+          priorityActions: fallbackScoring.priorityActions.slice(0, 1),
         },
       });
     }
 
-    const parsedResult = {
-      totalScore: submission.result.totalScore,
-      band: submission.result.band,
-      perDimensionPercentages: JSON.parse(submission.result.perDimensionPercentages),
-      strengths: JSON.parse(submission.result.strengths),
-      gaps: JSON.parse(submission.result.gaps),
-      priorityActions: JSON.parse(submission.result.priorityActions),
-    };
+    const isPaid = (submission.company?.planStatus || 'FREE').toUpperCase() === 'PAID';
+
+    const sortedResponses = (submission.responses || []).slice().sort((a: any, b: any) => {
+      const orderA = a.question?.order ?? 999;
+      const orderB = b.question?.order ?? 999;
+      return orderA - orderB;
+    });
+
+    const parsedPercentages = typeof submission.result.perDimensionPercentages === 'string'
+      ? JSON.parse(submission.result.perDimensionPercentages)
+      : submission.result.perDimensionPercentages;
+
+    const parsedStrengths = typeof submission.result.strengths === 'string'
+      ? JSON.parse(submission.result.strengths)
+      : (submission.result.strengths || []);
+
+    const parsedGaps = typeof submission.result.gaps === 'string'
+      ? JSON.parse(submission.result.gaps)
+      : (submission.result.gaps || []);
+
+    const parsedActions = typeof submission.result.priorityActions === 'string'
+      ? JSON.parse(submission.result.priorityActions)
+      : (submission.result.priorityActions || []);
+
+    // Server-side paywall gating: free tier receives score, band, dimensional bars & preview; full deliverables require PAID status
+    const gatedResult = isPaid
+      ? {
+          totalScore: submission.result.totalScore,
+          band: submission.result.band,
+          perDimensionPercentages: parsedPercentages,
+          strengths: parsedStrengths,
+          gaps: parsedGaps,
+          priorityActions: parsedActions,
+        }
+      : {
+          totalScore: submission.result.totalScore,
+          band: submission.result.band,
+          perDimensionPercentages: parsedPercentages,
+          strengths: parsedStrengths.slice(0, 1),
+          gaps: parsedGaps.slice(0, 1),
+          priorityActions: parsedActions.slice(0, 1).map((act: any) => ({
+            ...act,
+            nextStep: 'Complete step-by-step roadmap available in paid executive report.',
+          })),
+        };
 
     return NextResponse.json({
-      submission,
-      result: parsedResult,
+      submission: {
+        ...submission,
+        responses: isPaid ? sortedResponses : sortedResponses.slice(0, 3),
+      },
+      result: gatedResult,
     });
   } catch (error: any) {
     console.error('Error fetching report:', error);

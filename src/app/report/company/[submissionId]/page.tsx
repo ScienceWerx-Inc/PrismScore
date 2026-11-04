@@ -126,6 +126,16 @@ export default function CompanyReportPage() {
       if (data.success) {
         setCompany((prev: any) => ({ ...prev, planStatus: 'PAID', paymentStatus: 'PAID' }));
         setCheckoutModal(false);
+        // Re-fetch report from server to load full unlocked data
+        try {
+          const reportRes = await fetch(`/api/report/company/${submissionId}`);
+          const reportData = await reportRes.json();
+          if (reportData.submission && reportData.result) {
+            setSubmission(reportData.submission);
+            setResult(reportData.result);
+            setQuestions(reportData.submission.responses || []);
+          }
+        } catch {}
       }
     } catch (e) {
       alert('Checkout error');
@@ -154,7 +164,7 @@ export default function CompanyReportPage() {
     );
   }
 
-  const isPaid = company?.planStatus === 'PAID';
+  const isPaid = (company?.planStatus || 'FREE').toUpperCase() === 'PAID';
 
   const bandColors: Record<string, { bg: string; text: string; border: string }> = {
     Unaware: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
@@ -164,6 +174,12 @@ export default function CompanyReportPage() {
   };
 
   const currentBandStyle = bandColors[result.band] || bandColors.Exploring;
+
+  // Defensive parsing to guarantee safe rendering across client transitions
+  const dimPercentages: Record<string, number> =
+    typeof result?.perDimensionPercentages === 'string'
+      ? JSON.parse(result.perDimensionPercentages)
+      : (result?.perDimensionPercentages || {});
 
   return (
     <div className="flex-1 bg-slate-50 py-10 px-4 sm:px-6">
@@ -195,7 +211,7 @@ export default function CompanyReportPage() {
             </button>
 
             <Link
-              href="/dashboard"
+              href={`/dashboard?companyId=${company?.id || ''}`}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow-sm"
             >
               Go to Leadership Dashboard
@@ -234,7 +250,7 @@ export default function CompanyReportPage() {
                 Dimension Performance Breakdown
               </h3>
 
-              {Object.entries(result.perDimensionPercentages).map(([dimKey, pct]) => {
+              {Object.entries(dimPercentages).map(([dimKey, pct]) => {
                 const names: Record<string, string> = {
                   STRATEGY: 'Strategy and Leadership (25%)',
                   USE_VALUE: 'Use and Value (20%)',
@@ -265,6 +281,22 @@ export default function CompanyReportPage() {
                   </div>
                 );
               })}
+
+              {/* Dimension Weight Defensibility Rationale */}
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <details className="text-xs text-slate-500 group">
+                  <summary className="font-semibold text-brand-600 hover:text-brand-700 cursor-pointer flex items-center gap-1 select-none">
+                    <span>Why are dimensions weighted this way?</span>
+                  </summary>
+                  <div className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-[11px] text-slate-600 leading-relaxed">
+                    <p><strong className="text-slate-800">Strategy & Leadership (25%):</strong> Executive mandate, capital allocation, and strategic prioritization dictate the success or failure of all enterprise AI initiatives.</p>
+                    <p><strong className="text-slate-800">Use & Value (20%):</strong> Measures tangible workflow deployment and commercial productivity, preventing AI from stalling as an unmeasured experiment.</p>
+                    <p><strong className="text-slate-800">Data & Technology (20%):</strong> Assesses internal data structuring, model vetting, and integration architecture required for reliable performance.</p>
+                    <p><strong className="text-slate-800">Governance & Risk (20%):</strong> Ensures acceptable use, trade secret protection, and copyright compliance before autonomous scaling.</p>
+                    <p><strong className="text-slate-800">People & Skills (15%):</strong> Measures prompt literacy and adoption; while critical, workforce execution depends upstream on executive permission, sanctioned tooling, and clear governance.</p>
+                  </div>
+                </details>
+              </div>
             </div>
           </div>
         </div>
@@ -283,7 +315,7 @@ export default function CompanyReportPage() {
             </div>
 
             <Link
-              href="/dashboard"
+              href={`/dashboard?companyId=${company?.id || ''}`}
               className="px-6 py-3.5 rounded-xl font-bold bg-white text-purple-950 hover:bg-purple-50 shadow-md text-xs sm:text-sm flex-shrink-0 transition-transform active:scale-95 flex items-center gap-2"
             >
               Invite Leadership Team
@@ -316,8 +348,8 @@ export default function CompanyReportPage() {
           </div>
         )}
 
-        {/* FULL PAID REPORT CONTENT */}
-        <div className={`space-y-8 ${!isPaid ? 'opacity-30 blur-[2px] pointer-events-none select-none' : ''}`}>
+        {/* FULL EXECUTIVE REPORT CONTENT & PAYWALL GATE */}
+        <div className="space-y-8">
           {/* Key Strengths & Critical Gaps */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-emerald-200/80 shadow-sm">
@@ -344,7 +376,7 @@ export default function CompanyReportPage() {
             <div className="bg-white rounded-2xl p-6 border border-rose-200/80 shadow-sm">
               <div className="flex items-center gap-2 pb-3 mb-4 border-b border-rose-100 text-rose-800 font-bold">
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
-                <h3>Critical Gaps & Vulnerabilities</h3>
+                <h3>Critical Gaps & Operational Vulnerabilities</h3>
               </div>
               {result.gaps && result.gaps.length > 0 ? (
                 <ul className="space-y-3">
@@ -373,7 +405,7 @@ export default function CompanyReportPage() {
                 </h3>
               </div>
               <span className="text-xs text-slate-400 font-medium">
-                {result.priorityActions?.length || 0} recommendations
+                {result.priorityActions?.length || 0} recommendation{(result.priorityActions?.length || 0) === 1 ? '' : 's'}
               </span>
             </div>
 
@@ -403,41 +435,96 @@ export default function CompanyReportPage() {
                 </div>
               ))}
             </div>
+
+            {!isPaid && (
+              <div className="mt-6 p-5 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold text-brand-900">
+                    <Lock className="w-4 h-4 text-brand-600" />
+                    <span>Detailed Implementation Roadmaps Locked</span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    The free tier includes 1 high-impact action preview. Unlock the $149 full report for prioritized step-by-step playbooks across all 5 dimensions.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setCheckoutModal(true)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white shadow-sm flex-shrink-0"
+                >
+                  Unlock All Actions ($149)
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Full 25-Question Response Audit */}
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2.5 pb-4 mb-6 border-b border-slate-100">
-              <FileText className="w-5 h-5 text-brand-600" />
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Complete Response Audit Log</h3>
-                <p className="text-xs text-slate-500">
-                  Every response recorded during the company assessment.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-100 gap-2">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-5 h-5 text-brand-600" />
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Response Audit Log</h3>
+                  <p className="text-xs text-slate-500">
+                    {isPaid
+                      ? 'Every response recorded during the company assessment (canonical question order).'
+                      : 'Previewing 3 of 25 audited responses. Unlock full report to export complete audit log.'}
+                  </p>
+                </div>
               </div>
+
+              {!isPaid && (
+                <button
+                  onClick={() => setCheckoutModal(true)}
+                  className="text-xs font-bold text-brand-600 hover:text-brand-800 underline self-start sm:self-auto"
+                >
+                  Unlock all 25 responses
+                </button>
+              )}
             </div>
 
             <div className="divide-y divide-slate-100">
               {submission.responses && submission.responses.length > 0 ? (
-                submission.responses.map((resp: any, idx: number) => (
-                  <div key={resp.id || idx} className="py-3 text-xs">
-                    <div className="flex items-center justify-between text-slate-500 mb-1">
-                      <span className="font-semibold text-slate-700">
-                        Q{idx + 1}. {resp.question?.text || `Question ${idx + 1}`}
-                      </span>
-                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
-                        Recorded
-                      </span>
-                    </div>
-                    <p className="text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                      "{resp.option?.text || 'Response recorded'}"
-                    </p>
-                  </div>
-                ))
+                submission.responses
+                  .slice()
+                  .sort((a: any, b: any) => {
+                    const orderA = a.question?.order ?? 999;
+                    const orderB = b.question?.order ?? 999;
+                    return orderA - orderB;
+                  })
+                  .map((resp: any, idx: number) => {
+                    const qNum = resp.question?.order || idx + 1;
+                    return (
+                      <div key={resp.id || idx} className="py-3 text-xs">
+                        <div className="flex items-center justify-between text-slate-500 mb-1">
+                          <span className="font-semibold text-slate-700">
+                            Q{qNum}. {resp.question?.text || `Question ${qNum}`}
+                          </span>
+                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                            Recorded
+                          </span>
+                        </div>
+                        <p className="text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                          "{resp.option?.text || 'Response recorded'}"
+                        </p>
+                      </div>
+                    );
+                  })
               ) : (
                 <p className="text-xs text-slate-500 py-3">All responses audited and scored.</p>
               )}
             </div>
+
+            {!isPaid && (
+              <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+                <button
+                  onClick={() => setCheckoutModal(true)}
+                  className="text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-xl border border-brand-200 inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Unlock Remaining 22 Responses & Full PDF Export ($149)
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

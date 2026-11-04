@@ -237,6 +237,10 @@ export default function LandingPage() {
                     15% Weight
                   </span>
                 </div>
+
+                <div className="mt-2 p-3 rounded-xl bg-slate-50/70 border border-slate-200 text-[11px] text-slate-600 leading-relaxed">
+                  <strong className="text-slate-800">Why these weights?</strong> Strategy & Leadership (25%) anchors the highest weight because executive mandate and capital dictate all downstream outcomes. Use, Data, and Governance (20% each) verify real productivity, technical readiness, and legal safety. People & Skills (15%) drives adoption, but depends upstream on executive permission and sanctioned infrastructure.
+                </div>
               </div>
             </div>
 

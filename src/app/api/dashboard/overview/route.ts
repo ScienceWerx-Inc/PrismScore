@@ -9,7 +9,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     let companyId = searchParams.get('companyId');
 
-    // Default to the demo company if none specified
+    // 1. If companyId not specified, find the most recently created real company
+    if (!companyId) {
+      const latestCompany = await prisma.company.findFirst({
+        where: {
+          id: { not: 'demo-company-vanguard' },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (latestCompany) {
+        companyId = latestCompany.id;
+      }
+    }
+
+    // 2. Fall back to demo company only if no real company exists
     if (!companyId) {
       const demoCompany = await prisma.company.findFirst({
         where: { id: 'demo-company-vanguard' },
@@ -18,14 +31,13 @@ export async function GET(request: Request) {
     }
 
     if (!companyId) {
-      // Find latest company
-      const latest = await prisma.company.findFirst({
+      const anyCompany = await prisma.company.findFirst({
         orderBy: { createdAt: 'desc' },
       });
-      if (!latest) {
+      if (!anyCompany) {
         return NextResponse.json({ error: 'No company found' }, { status: 404 });
       }
-      companyId = latest.id;
+      companyId = anyCompany.id;
     }
 
     // 1. Fetch Company details

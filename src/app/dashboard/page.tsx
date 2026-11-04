@@ -36,9 +36,21 @@ export default function DashboardPage() {
   // Simulation toggle to allow reviewer to test "Below 3 threshold" vs "Unlocked"
   const [forceThreshold, setForceThreshold] = useState<number | null>(null);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (targetCompanyId?: string) => {
     try {
-      const res = await fetch('/api/dashboard/overview');
+      let activeId = targetCompanyId;
+      if (!activeId && typeof window !== 'undefined') {
+        activeId =
+          new URLSearchParams(window.location.search).get('companyId') ||
+          localStorage.getItem('activeCompanyId') ||
+          '';
+      }
+
+      const url = activeId
+        ? `/api/dashboard/overview?companyId=${encodeURIComponent(activeId)}`
+        : '/api/dashboard/overview';
+
+      const res = await fetch(url);
       const json = await res.json();
       setData(json);
     } catch (e) {
@@ -205,6 +217,26 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+
+        {company.id === 'demo-company-vanguard' && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">
+            <div className="flex items-center gap-2">
+              <span className="font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-950 uppercase tracking-wider text-[10px]">
+                Sample Demo Workspace
+              </span>
+              <span>Viewing pre-seeded demonstration data for Vanguard Systems, Inc.</span>
+            </div>
+            {typeof window !== 'undefined' && localStorage.getItem('activeCompanyId') && (
+              <button
+                type="button"
+                onClick={() => fetchDashboard(localStorage.getItem('activeCompanyId') || '')}
+                className="font-bold underline text-amber-900 hover:text-amber-950 self-start sm:self-auto"
+              >
+                Switch to My Company ({localStorage.getItem('activeCompanyName') || 'My Company'})
+              </button>
+            )}
+          </div>
+        )}
 
         {actionMessage && (
           <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">

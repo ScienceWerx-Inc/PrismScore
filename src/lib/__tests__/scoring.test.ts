@@ -62,6 +62,29 @@ describe('Scoring Engine Tests', () => {
     expect(result.band).toBe('Exploring');
   });
 
+  it('computes exact unrounded fractional composite score (matches peer review test case: 336.67)', () => {
+    // Strategy: 11/15 = 73.333% * 0.25 * 500 = 91.6667
+    // Use: 9/15 = 60.0% * 0.20 * 500 = 60.0
+    // Data: 10/15 = 66.667% * 0.20 * 500 = 66.6667
+    // Governance: 11/15 = 73.333% * 0.20 * 500 = 73.3333
+    // People: 9/15 = 60.0% * 0.15 * 500 = 45.0
+    // Exact composite = 336.6667 -> 336.67
+    const result = calculateCompanyScore({
+      STRATEGY: 11,
+      USE_VALUE: 9,
+      DATA_TECH: 10,
+      GOVERNANCE: 11,
+      PEOPLE: 9,
+    });
+
+    expect(result.totalScore).toBe(336.67);
+    expect(result.band).toBe('Established');
+    // Ensure priority recommendations target lowest dimensions (Use & Value, People & Skills)
+    expect(result.priorityActions.length).toBeGreaterThan(0);
+    expect(result.priorityActions[0].dimension).toBe('Use and Value');
+    expect(result.priorityActions[1].dimension).toBe('People and Skills');
+  });
+
   it('correctly maps readiness bands along boundaries', () => {
     expect(calculateReadinessBand(0)).toBe('Unaware');
     expect(calculateReadinessBand(200)).toBe('Unaware');

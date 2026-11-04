@@ -57,9 +57,9 @@ function AssessmentContent() {
   const [submitting, setSubmitting] = useState(false);
 
   // Per-Question Timer State
-  // Allowed options: 30s, 45s, 60s, or 0 (untimed)
-  const [timerDuration, setTimerDuration] = useState<number>(30);
-  const [timeLeft, setTimeLeft] = useState<number>(30);
+  // Allowed options: 0 (untimed, recommended default), 30s, 45s, or 60s
+  const [timerDuration, setTimerDuration] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isTimerPaused, setIsTimerPaused] = useState<boolean>(false);
   const [timedOutNotice, setTimedOutNotice] = useState<string | null>(null);
 
