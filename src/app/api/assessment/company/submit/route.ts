@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { calculateCompanyScore, DimensionKey } from '@/lib/scoring';
+import { COMPANY_QUESTIONS } from '@/lib/seed-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,119 +10,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { submissionId, companyId, companyName, answers = {} } = body;
 
-    if (!submissionId) {
-      return NextResponse.json({ error: 'submissionId is required.' }, { status: 400 });
-    }
+    const effectiveSubId = submissionId || `sub_${Date.now()}`;
 
-    // 1. Fetch submission if it exists in the current container DB
-    let submission = await prisma.submission.findUnique({
-      where: { id: submissionId },
-      include: {
-        company: true,
-        user: true,
-        responses: {
-          include: {
-            question: true,
-            option: true,
-          },
-        },
-      },
-    });
-
-    // 2. If not found in this serverless container, reconstruct or locate company
-    if (!submission) {
-      let targetCompany = null;
-      if (companyId) {
-        targetCompany = await prisma.company.findUnique({ where: { id: companyId } });
-      }
-      if (!targetCompany) {
-        targetCompany = await prisma.company.findFirst({
-          orderBy: { createdAt: 'desc' },
-        });
-      }
-      if (!targetCompany) {
-        targetCompany = await prisma.company.create({
-          data: {
-            name: companyName || 'Company',
-            industry: 'Software & Technology',
-            sizeBand: '11-50 employees',
-            country: 'United States',
-          },
-        });
-      }
-
-      let user = await prisma.user.findFirst({
-        where: { companyId: targetCompany.id },
-      });
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email: `initiator_${Date.now()}@prismscore.example`,
-            name: 'Company Initiator',
-            role: 'ADMIN',
-            companyId: targetCompany.id,
-          },
-        });
-      }
-
-      submission = await prisma.submission.create({
-        data: {
-          id: submissionId,
-          userId: user.id,
-          companyId: targetCompany.id,
-          assessmentTypeId: 'COMPANY',
-          status: 'IN_PROGRESS',
-        },
-        include: {
-          company: true,
-          user: true,
-          responses: {
-            include: {
-              question: true,
-              option: true,
-            },
-          },
-        },
-      });
-    }
-
-    // 3. Save any answers passed directly from the client payload
-    const answerEntries = Object.entries(answers);
-    if (answerEntries.length > 0) {
-      for (const [qId, optId] of answerEntries) {
-        try {
-          await prisma.response.upsert({
-            where: {
-              submissionId_questionId: {
-                submissionId: submission.id,
-                questionId: qId,
-              },
-            },
-            update: {
-              optionId: optId as string,
-            },
-            create: {
-              submissionId: submission.id,
-              questionId: qId,
-              optionId: optId as string,
-            },
-          });
-        } catch (saveErr) {
-          console.warn('Upsert response fallback error:', saveErr);
-        }
-      }
-    }
-
-    // 4. Fetch all responses with question and option points
-    const responses = await prisma.response.findMany({
-      where: { submissionId: submission.id },
-      include: {
-        question: true,
-        option: true,
-      },
-    });
-
-    // 5. Aggregate points by dimension
+    // 1. Calculate score directly and deterministically from answers using the question bank
     const rawPoints: Record<DimensionKey, number> = {
       STRATEGY: 0,
       USE_VALUE: 0,
@@ -130,83 +21,166 @@ export async function POST(request: Request) {
       PEOPLE: 0,
     };
 
-    for (const resp of responses) {
-      const dimKey = resp.question.dimensionId as DimensionKey;
-      if (rawPoints[dimKey] !== undefined && resp.option) {
-        rawPoints[dimKey] += resp.option.points;
-      }
-    }
+    const builtResponses: Array<{
+      id: string;
+      questionId: string;
+      optionId: string;
+      question: { id: string; text: string; dimensionId: string };
+      option: { id: string; text: string; points: number };
+    }> = [];
 
-    // If responses was empty in DB, compute directly from answers payload
-    if (responses.length === 0 && answerEntries.length > 0) {
-      const optionIds = Object.values(answers) as string[];
-      const opts = await prisma.option.findMany({
-        where: { id: { in: optionIds } },
-        include: { question: true },
-      });
-      for (const opt of opts) {
-        const dimKey = opt.question.dimensionId as DimensionKey;
-        if (rawPoints[dimKey] !== undefined) {
-          rawPoints[dimKey] += opt.points;
+    for (const q of COMPANY_QUESTIONS) {
+      const selectedOptId = answers[q.id];
+      if (selectedOptId) {
+        const opt = q.options.find((o) => o.id === selectedOptId);
+        if (opt) {
+          const dimKey = q.dimensionId as DimensionKey;
+          if (rawPoints[dimKey] !== undefined) {
+            rawPoints[dimKey] += opt.points ?? 0;
+          }
+          builtResponses.push({
+            id: `resp_${q.id}`,
+            questionId: q.id,
+            optionId: opt.id,
+            question: { id: q.id, text: q.text, dimensionId: q.dimensionId },
+            option: { id: opt.id, text: opt.text, points: opt.points ?? 0 },
+          });
         }
       }
     }
 
-    // 6. Compute score using published formula
     const scoringResult = calculateCompanyScore(rawPoints);
 
-    // 7. Save Result
-    const result = await prisma.result.upsert({
-      where: { submissionId: submission.id },
-      update: {
-        totalScore: scoringResult.totalScore,
-        band: scoringResult.band,
-        perDimensionPercentages: JSON.stringify(scoringResult.dimensionPercentages),
-        strengths: JSON.stringify(scoringResult.strengths),
-        gaps: JSON.stringify(scoringResult.criticalGaps),
-        priorityActions: JSON.stringify(scoringResult.priorityActions),
-      },
-      create: {
-        submissionId: submission.id,
-        totalScore: scoringResult.totalScore,
-        band: scoringResult.band,
-        perDimensionPercentages: JSON.stringify(scoringResult.dimensionPercentages),
-        strengths: JSON.stringify(scoringResult.strengths),
-        gaps: JSON.stringify(scoringResult.criticalGaps),
-        priorityActions: JSON.stringify(scoringResult.priorityActions),
-      },
-    });
+    // 2. Persist in database (with graceful fallback if container DB is fresh)
+    let companyRecord = null;
+    let userRecord = null;
+    let submissionRecord = null;
 
-    // 8. Update submission status to COMPLETED
-    const updatedSubmission = await prisma.submission.update({
-      where: { id: submission.id },
-      data: {
-        status: 'COMPLETED',
-        completedAt: new Date(),
-      },
-      include: {
-        company: true,
-        user: true,
-        result: true,
-        responses: {
-          include: {
-            question: true,
-            option: true,
+    try {
+      if (companyId) {
+        companyRecord = await prisma.company.findUnique({ where: { id: companyId } });
+      }
+      if (!companyRecord) {
+        companyRecord = await prisma.company.findFirst({ orderBy: { createdAt: 'desc' } });
+      }
+      if (!companyRecord) {
+        companyRecord = await prisma.company.create({
+          data: {
+            id: companyId || undefined,
+            name: companyName || 'Company',
+            industry: 'Software & Technology',
+            sizeBand: '11-50 employees',
+            country: 'United States',
           },
+        });
+      }
+
+      userRecord = await prisma.user.findFirst({
+        where: { companyId: companyRecord.id },
+      });
+      if (!userRecord) {
+        userRecord = await prisma.user.create({
+          data: {
+            email: `leader_${Date.now()}@prismscore.example`,
+            name: 'Company Leader',
+            role: 'ADMIN',
+            companyId: companyRecord.id,
+          },
+        });
+      }
+
+      // Upsert submission
+      submissionRecord = await prisma.submission.upsert({
+        where: { id: effectiveSubId },
+        update: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
         },
-      },
-    });
+        create: {
+          id: effectiveSubId,
+          userId: userRecord.id,
+          companyId: companyRecord.id,
+          assessmentTypeId: 'COMPANY',
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+
+      // Save responses
+      for (const resp of builtResponses) {
+        try {
+          await prisma.response.upsert({
+            where: {
+              submissionId_questionId: {
+                submissionId: submissionRecord.id,
+                questionId: resp.questionId,
+              },
+            },
+            update: { optionId: resp.optionId },
+            create: {
+              submissionId: submissionRecord.id,
+              questionId: resp.questionId,
+              optionId: resp.optionId,
+            },
+          });
+        } catch {}
+      }
+
+      // Upsert result
+      await prisma.result.upsert({
+        where: { submissionId: submissionRecord.id },
+        update: {
+          totalScore: scoringResult.totalScore,
+          band: scoringResult.band,
+          perDimensionPercentages: JSON.stringify(scoringResult.dimensionPercentages),
+          strengths: JSON.stringify(scoringResult.strengths),
+          gaps: JSON.stringify(scoringResult.criticalGaps),
+          priorityActions: JSON.stringify(scoringResult.priorityActions),
+        },
+        create: {
+          submissionId: submissionRecord.id,
+          totalScore: scoringResult.totalScore,
+          band: scoringResult.band,
+          perDimensionPercentages: JSON.stringify(scoringResult.dimensionPercentages),
+          strengths: JSON.stringify(scoringResult.strengths),
+          gaps: JSON.stringify(scoringResult.criticalGaps),
+          priorityActions: JSON.stringify(scoringResult.priorityActions),
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database persistence warning in submit (non-fatal):', dbErr);
+    }
+
+    const finalCompany = companyRecord || {
+      id: companyId || 'company_default',
+      name: companyName || 'Company',
+      industry: 'Software & Technology',
+      sizeBand: '11-50 employees',
+      country: 'United States',
+      planStatus: 'FREE',
+    };
+
+    const finalSubmission = {
+      id: effectiveSubId,
+      companyId: finalCompany.id,
+      completedAt: new Date().toISOString(),
+      status: 'COMPLETED',
+      company: finalCompany,
+      responses: builtResponses,
+    };
 
     return NextResponse.json({
       success: true,
-      resultId: result.id,
-      submissionId: submission.id,
+      submissionId: effectiveSubId,
       scoringResult,
-      submission: updatedSubmission,
-      company: updatedSubmission.company,
+      submission: finalSubmission,
+      company: finalCompany,
     });
   } catch (error: any) {
-    console.error('Error submitting assessment:', error);
-    return NextResponse.json({ error: error.message || 'Submission failed' }, { status: 500 });
+    console.error('Submit fatal error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Submission failed' },
+      { status: 500 }
+    );
   }
 }

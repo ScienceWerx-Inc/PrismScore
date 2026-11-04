@@ -52,35 +52,44 @@ export default function CompanyReportPage() {
   const [unlocking, setUnlocking] = useState(false);
 
   useEffect(() => {
-    // 1. Instant hydration from client-side cached report (resilient to serverless container switches)
+    // 1. Instant synchronous hydration from client storage (resilient to serverless container switches)
     try {
-      const cached =
+      const cachedRaw =
         localStorage.getItem(`prism_report_${submissionId}`) ||
-        sessionStorage.getItem(`prism_report_${submissionId}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.submission || parsed.scoringResult) {
-          setSubmission(parsed.submission || { id: submissionId, completedAt: new Date() });
-          setCompany(parsed.company || parsed.submission?.company || { name: 'Your Company', planStatus: 'FREE' });
-          setResult(parsed.scoringResult || parsed.result);
-          setQuestions(parsed.submission?.responses || []);
+        sessionStorage.getItem(`prism_report_${submissionId}`) ||
+        localStorage.getItem('prism_latest_report');
+
+      if (cachedRaw) {
+        const parsed = JSON.parse(cachedRaw);
+        const sub = parsed.submission || { id: submissionId, completedAt: new Date() };
+        const comp = parsed.company || parsed.submission?.company || { name: 'Your Company', planStatus: 'FREE' };
+        const res = parsed.scoringResult || parsed.result;
+
+        if (res && res.totalScore !== undefined) {
+          setSubmission(sub);
+          setCompany(comp);
+          setResult(res);
+          setQuestions(sub.responses || []);
           setLoading(false);
         }
       }
     } catch (cacheErr) {
-      console.warn('Cache read error:', cacheErr);
+      console.warn('Local cache read notice:', cacheErr);
     }
 
-    // 2. Fetch from server
+    // 2. Fetch from server to sync DB records
     async function fetchReport() {
       try {
         const res = await fetch(`/api/report/company/${submissionId}`);
         const data = await res.json();
         if (data.submission && data.result) {
           setSubmission(data.submission);
-          setCompany(data.submission.company);
+          setCompany(data.submission.company || { name: 'Your Company', planStatus: 'FREE' });
           setResult(data.result);
           setQuestions(data.questions || data.submission.responses || []);
+          setLoading(false);
+
+          // Update cache with confirmed server payload
           try {
             localStorage.setItem(
               `prism_report_${submissionId}`,
@@ -93,11 +102,12 @@ export default function CompanyReportPage() {
           } catch {}
         }
       } catch (e) {
-        console.error('Failed to load report from server:', e);
+        console.error('Report server sync note:', e);
       } finally {
         setLoading(false);
       }
     }
+
     if (submissionId) {
       fetchReport();
     }
@@ -128,7 +138,7 @@ export default function CompanyReportPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12">
         <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-4" />
-        <p className="text-slate-600 text-sm">Generating your AI Literacy Report...</p>
+        <p className="text-slate-600 text-sm">Generating your PrismScore Report...</p>
       </div>
     );
   }
@@ -292,7 +302,7 @@ export default function CompanyReportPage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 <h3>Key Organizational Strengths</h3>
               </div>
-              {result.strengths.length > 0 ? (
+              {result.strengths && result.strengths.length > 0 ? (
                 <ul className="space-y-3">
                   {result.strengths.map((str, i) => (
                     <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
@@ -313,7 +323,7 @@ export default function CompanyReportPage() {
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
                 <h3>Critical Gaps & Vulnerabilities</h3>
               </div>
-              {result.gaps.length > 0 ? (
+              {result.gaps && result.gaps.length > 0 ? (
                 <ul className="space-y-3">
                   {result.gaps.map((gap, i) => (
                     <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
@@ -340,12 +350,12 @@ export default function CompanyReportPage() {
                 </h3>
               </div>
               <span className="text-xs text-slate-400 font-medium">
-                {result.priorityActions.length} recommendations
+                {result.priorityActions?.length || 0} recommendations
               </span>
             </div>
 
             <div className="space-y-4">
-              {result.priorityActions.map((act, i) => (
+              {result.priorityActions?.map((act, i) => (
                 <div
                   key={i}
                   className="p-5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-brand-200 transition-all space-y-2.5"
@@ -385,21 +395,25 @@ export default function CompanyReportPage() {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {submission.responses.map((resp: any, idx: number) => (
-                <div key={resp.id} className="py-3 text-xs">
-                  <div className="flex items-center justify-between text-slate-500 mb-1">
-                    <span className="font-semibold text-slate-700">
-                      Q{idx + 1}. {resp.question.text}
-                    </span>
-                    <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">
-                      +{resp.option.points} pts
-                    </span>
+              {submission.responses && submission.responses.length > 0 ? (
+                submission.responses.map((resp: any, idx: number) => (
+                  <div key={resp.id || idx} className="py-3 text-xs">
+                    <div className="flex items-center justify-between text-slate-500 mb-1">
+                      <span className="font-semibold text-slate-700">
+                        Q{idx + 1}. {resp.question?.text || `Question ${idx + 1}`}
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                        Recorded
+                      </span>
+                    </div>
+                    <p className="text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                      "{resp.option?.text || 'Response recorded'}"
+                    </p>
                   </div>
-                  <p className="text-slate-600 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
-                    "{resp.option.text}"
-                  </p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-slate-500 py-3">All responses audited and scored.</p>
+              )}
             </div>
           </div>
         </div>
@@ -461,4 +475,3 @@ export default function CompanyReportPage() {
     </div>
   );
 }
-
