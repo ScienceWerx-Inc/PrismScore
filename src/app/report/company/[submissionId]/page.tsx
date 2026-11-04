@@ -269,6 +269,29 @@ export default function CompanyReportPage() {
           </div>
         </div>
 
+        {/* C-LEVEL TEAM DIAGNOSTIC NEXT STEP (Reciprocity Hook) */}
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-purple-800/60 shadow-lg no-print">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider">
+                <Users className="w-3.5 h-3.5" /> Next Step: Executive 360 Heatmap
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold">Compare with Your C-Level Leadership Team</h3>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+                Your company baseline is {result.totalScore}/500. Do your CTO, CFO, and COO see your organization's AI capabilities the same way? Invite your leadership team to uncover alignment gaps and identify hidden resistance points.
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard"
+              className="px-6 py-3.5 rounded-xl font-bold bg-white text-purple-950 hover:bg-purple-50 shadow-md text-xs sm:text-sm flex-shrink-0 transition-transform active:scale-95 flex items-center gap-2"
+            >
+              Invite Leadership Team
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
         {/* UPGRADE TEASER (If not paid) */}
         {!isPaid && (
           <div className="bg-gradient-to-r from-brand-900 via-indigo-900 to-slate-900 rounded-3xl p-8 text-white border border-brand-800 shadow-xl no-print">

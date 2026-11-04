@@ -32,7 +32,7 @@ export default function OnboardingPage() {
 
   // Headcount of C-Level leaders
   const [clevelCount, setClevelCount] = useState<number>(3);
-  const [skipExecs, setSkipExecs] = useState(false);
+  const [inviteTeamNow, setInviteTeamNow] = useState(false);
 
   // Dynamic executive rows (preserves data when count changes)
   const [executives, setExecutives] = useState<ExecutiveRow[]>([
@@ -98,7 +98,7 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      const filteredExecs = skipExecs
+      const filteredExecs = !inviteTeamNow
         ? []
         : executives.filter((ex) => ex.name.trim() || ex.email.trim());
 
@@ -141,15 +141,31 @@ export default function OnboardingPage() {
     <div className="py-12 bg-slate-50 flex-1">
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Step 1 of 2: PrismScore™ Setup
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold uppercase tracking-wider mb-3">
+            <Sparkles className="w-3.5 h-3.5" /> Step 1 of 2: Confidential Diagnostic Setup
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
-            Company & Leadership Onboarding
+            Discover Your Company's 500-Point AI Readiness Score
           </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Configure your organization profile and set up your confidential Prism C-level diagnostic.
+          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Complete the 25-question baseline assessment to benchmark your organization across 5 operational dimensions, uncover strategic blind spots, and generate a tailored gap-closing curriculum for your leadership team.
           </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-slate-500 font-medium">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              Confidential & Non-Disclosive
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              ~5 Minutes to Complete
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              Instant Free Score Report
+            </span>
+          </div>
         </div>
 
         {error && (
@@ -267,6 +283,9 @@ export default function OnboardingPage() {
                   onChange={(e) => setAdminEmail(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-slate-50/50"
                 />
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  Used strictly to secure your diagnostic results and access your score card.
+                </span>
               </div>
 
               <div>
@@ -302,31 +321,61 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* Section 3: C-Level Team Onboarding */}
+          {/* Section 3: C-Level Team Onboarding (Optional) */}
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-100 gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b border-slate-100 gap-3">
               <div className="flex items-center gap-2.5">
                 <Users className="w-5 h-5 text-purple-600" />
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">3. C-Level Executive Team</h2>
-                  <p className="text-xs text-slate-500">
-                    Enter your leadership team to send confidential C-level diagnostic invitations.
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">3. C-Level Executive Team</h2>
+                    <span className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Invite your executive peers now, or easily add them from your dashboard after seeing your company score.
                   </p>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setSkipExecs(!skipExecs)}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-800 underline self-start sm:self-auto"
+                onClick={() => setInviteTeamNow(!inviteTeamNow)}
+                className={`text-xs font-bold px-3.5 py-1.5 rounded-xl border transition-all ${
+                  inviteTeamNow
+                    ? 'bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                }`}
               >
-                {skipExecs ? 'Re-enable adding executives' : 'Add later (skip without losing data)'}
+                {inviteTeamNow ? 'Skip for now (add after score)' : '+ Add leadership team now'}
               </button>
             </div>
 
-            {!skipExecs && (
+            {!inviteTeamNow ? (
+              <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="text-purple-950 font-medium">
+                  <strong>Recommended:</strong> Complete your 25 questions first to get your company baseline, then invite your C-level team to uncover alignment gaps and blind spots.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInviteTeamNow(true)}
+                  className="text-xs font-bold text-purple-700 hover:text-purple-900 underline whitespace-nowrap self-start sm:self-auto"
+                >
+                  Enter executives now instead
+                </button>
+              </div>
+            ) : (
               <>
-                <div className="mb-6 p-4 rounded-xl bg-purple-50/60 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                {/* Inline Confidentiality and Trust Callout */}
+                <div className="mb-5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3 text-xs text-slate-600">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <strong className="text-slate-800">Confidentiality Guarantee:</strong> Zero spam. No invitation emails are dispatched until you finish and review your assessment. Individual C-level responses remain confidential to ensure candid, authentic self-reporting.
+                  </div>
+                </div>
+
+                <div className="mb-5 p-4 rounded-xl bg-purple-50/60 border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <span className="font-bold text-sm text-purple-950">
                       How many C-level leaders are in your company?
@@ -392,36 +441,35 @@ export default function OnboardingPage() {
                 </div>
               </>
             )}
-
-            {skipExecs && (
-              <div className="p-4 rounded-xl bg-slate-100 text-slate-600 text-xs">
-                You can invite your C-level executives anytime from your company dashboard after finishing the company assessment.
-              </div>
-            )}
           </div>
 
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200/80">
             <button
               type="button"
               onClick={() => router.push('/')}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors order-2 sm:order-1"
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-8 py-3.5 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-md shadow-brand-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                'Initializing...'
-              ) : (
-                <>
-                  Proceed to Company Assessment (25 Qs)
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:items-end gap-1.5 w-full sm:w-auto order-1 sm:order-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-md shadow-brand-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  'Initializing...'
+                ) : (
+                  <>
+                    Start Company Assessment (25 Questions)
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+              <span className="text-[11px] text-slate-500 font-medium text-center sm:text-right">
+                Free 500-point benchmark score and gap report generated upon completion.
+              </span>
+            </div>
           </div>
         </form>
       </div>
