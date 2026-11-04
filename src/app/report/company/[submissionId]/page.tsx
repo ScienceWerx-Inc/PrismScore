@@ -52,18 +52,48 @@ export default function CompanyReportPage() {
   const [unlocking, setUnlocking] = useState(false);
 
   useEffect(() => {
+    // 1. Instant hydration from client-side cached report (resilient to serverless container switches)
+    try {
+      const cached =
+        localStorage.getItem(`prism_report_${submissionId}`) ||
+        sessionStorage.getItem(`prism_report_${submissionId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.submission || parsed.scoringResult) {
+          setSubmission(parsed.submission || { id: submissionId, completedAt: new Date() });
+          setCompany(parsed.company || parsed.submission?.company || { name: 'Your Company', planStatus: 'FREE' });
+          setResult(parsed.scoringResult || parsed.result);
+          setQuestions(parsed.submission?.responses || []);
+          setLoading(false);
+        }
+      }
+    } catch (cacheErr) {
+      console.warn('Cache read error:', cacheErr);
+    }
+
+    // 2. Fetch from server
     async function fetchReport() {
       try {
         const res = await fetch(`/api/report/company/${submissionId}`);
         const data = await res.json();
-        if (data.submission) {
+        if (data.submission && data.result) {
           setSubmission(data.submission);
           setCompany(data.submission.company);
           setResult(data.result);
-          setQuestions(data.questions || []);
+          setQuestions(data.questions || data.submission.responses || []);
+          try {
+            localStorage.setItem(
+              `prism_report_${submissionId}`,
+              JSON.stringify({
+                submission: data.submission,
+                scoringResult: data.result,
+                company: data.submission.company,
+              })
+            );
+          } catch {}
         }
       } catch (e) {
-        console.error('Failed to load report:', e);
+        console.error('Failed to load report from server:', e);
       } finally {
         setLoading(false);
       }

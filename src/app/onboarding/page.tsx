@@ -125,6 +125,7 @@ export default function OnboardingPage() {
 
       // Save active session in local storage for navigation
       localStorage.setItem('activeCompanyId', data.companyId);
+      localStorage.setItem('activeCompanyName', companyName);
       localStorage.setItem('activeUserId', data.userId);
       localStorage.setItem('activeSubmissionId', data.submissionId);
 

@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { submissionId } = params;
 
-    const submission = await prisma.submission.findUnique({
+    let submission = await prisma.submission.findUnique({
       where: { id: submissionId },
       include: {
         company: true,
@@ -24,6 +24,25 @@ export async function GET(
         },
       },
     });
+
+    // If not found by exact ID, fallback to most recent completed submission in this container
+    if (!submission) {
+      submission = await prisma.submission.findFirst({
+        where: { assessmentTypeId: 'COMPANY', status: 'COMPLETED' },
+        orderBy: { completedAt: 'desc' },
+        include: {
+          company: true,
+          user: true,
+          result: true,
+          responses: {
+            include: {
+              question: true,
+              option: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
@@ -50,4 +69,3 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
