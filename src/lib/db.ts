@@ -3,8 +3,8 @@ import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 
 function getDatabaseUrl(): string {
-  // If explicitly overridden via env var with a custom remote URL or non-file scheme, use it directly
-  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith('file:')) {
+  // If explicitly overridden via env var WITH A VALID FILE: PROTOCOL, honor it
+  if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:')) {
     return process.env.DATABASE_URL;
   }
 
@@ -74,6 +74,9 @@ function getDatabaseUrl(): string {
 }
 
 const dbUrl = getDatabaseUrl();
+
+// Overwrite process.env.DATABASE_URL so Prisma's internal engines only see the valid file: URL
+process.env.DATABASE_URL = dbUrl;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
