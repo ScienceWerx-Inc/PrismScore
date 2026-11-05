@@ -287,7 +287,7 @@ export const COMPANY_QUESTIONS: SeedQuestion[] = [
     options: [
       { id: 'cg2_0', text: 'Staff routinely input customer names, code, or finances into public AI tools.', points: 0, order: 0 },
       { id: 'cg2_1', text: 'Staff are verbally instructed to redact names, but compliance is unverified.', points: 1, order: 1 },
-      { id: 'cg2_2', text: 'Zero-data-retention agreements and enterprise tenant privacy settings enforced.', points: 2, order: 2 },
+      { id: 'cg2_2', text: 'Formal vendor non-training agreements and enterprise privacy controls enforced.', points: 2, order: 2 },
       { id: 'cg2_3', text: 'Automated data redaction pipelines, strict mathematical privacy guarantees, and dedicated private enterprise environments.', points: 3, order: 3 },
     ],
   },

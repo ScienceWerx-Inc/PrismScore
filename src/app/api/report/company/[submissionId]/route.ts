@@ -95,10 +95,6 @@ export async function GET(
         planStatus: 'FREE',
       };
 
-      const fallbackGaps = (fallbackScoring.criticalGaps && fallbackScoring.criticalGaps.length > 0)
-        ? fallbackScoring.criticalGaps
-        : (fallbackScoring.moderateGaps || []);
-
       return NextResponse.json({
         submission: {
           id: submissionId,
@@ -111,8 +107,10 @@ export async function GET(
           totalScore: fallbackScoring.totalScore,
           band: fallbackScoring.band,
           perDimensionPercentages: fallbackScoring.dimensionPercentages,
-          strengths: fallbackScoring.strengths.slice(0, 1),
-          gaps: fallbackGaps.slice(0, 1),
+          strengths: fallbackScoring.strengths, // Surface all qualified strengths (Strategy & Governance)
+          moderateGaps: fallbackScoring.moderateGaps,
+          criticalGaps: fallbackScoring.criticalGaps,
+          gaps: [...fallbackScoring.criticalGaps, ...fallbackScoring.moderateGaps],
           priorityActions: fallbackScoring.priorityActions.slice(0, 1),
         },
       });
@@ -126,17 +124,34 @@ export async function GET(
       return orderA - orderB;
     });
 
-    const parsedPercentages = typeof submission.result.perDimensionPercentages === 'string'
+    const parsedPercentages: Record<string, number> = typeof submission.result.perDimensionPercentages === 'string'
       ? JSON.parse(submission.result.perDimensionPercentages)
-      : submission.result.perDimensionPercentages;
+      : (submission.result.perDimensionPercentages || {});
 
-    const parsedStrengths = typeof submission.result.strengths === 'string'
-      ? JSON.parse(submission.result.strengths)
-      : (submission.result.strengths || []);
+    // Derive 3-tier analysis directly from percentages for complete consistency
+    const dimNames: Record<string, string> = {
+      STRATEGY: 'Strategy and Leadership',
+      USE_VALUE: 'Use and Value',
+      DATA_TECH: 'Data and Technology',
+      GOVERNANCE: 'Governance and Risk',
+      PEOPLE: 'People and Skills',
+    };
 
-    const parsedGaps = typeof submission.result.gaps === 'string'
-      ? JSON.parse(submission.result.gaps)
-      : (submission.result.gaps || []);
+    const derivedStrengths: string[] = [];
+    const derivedModerateGaps: string[] = [];
+    const derivedCriticalGaps: string[] = [];
+
+    for (const [dimKey, pct] of Object.entries(parsedPercentages)) {
+      const name = dimNames[dimKey] || dimKey;
+      const numPct = typeof pct === 'number' ? pct : parseFloat(pct as any) || 0;
+      if (numPct >= 70) {
+        derivedStrengths.push(`${name} (${numPct}%): Strong operational baseline and established practices.`);
+      } else if (numPct <= 40) {
+        derivedCriticalGaps.push(`${name} (${numPct}%): Underdeveloped practices expose the organization to significant operational risk.`);
+      } else {
+        derivedModerateGaps.push(`${name} (${numPct}%): Developing baseline requiring targeted operational refinement.`);
+      }
+    }
 
     const parsedActions = typeof submission.result.priorityActions === 'string'
       ? JSON.parse(submission.result.priorityActions)
@@ -148,16 +163,20 @@ export async function GET(
           totalScore: submission.result.totalScore,
           band: submission.result.band,
           perDimensionPercentages: parsedPercentages,
-          strengths: parsedStrengths,
-          gaps: parsedGaps,
+          strengths: derivedStrengths,
+          moderateGaps: derivedModerateGaps,
+          criticalGaps: derivedCriticalGaps,
+          gaps: [...derivedCriticalGaps, ...derivedModerateGaps],
           priorityActions: parsedActions,
         }
       : {
           totalScore: submission.result.totalScore,
           band: submission.result.band,
           perDimensionPercentages: parsedPercentages,
-          strengths: parsedStrengths.slice(0, 1),
-          gaps: parsedGaps.slice(0, 1),
+          strengths: derivedStrengths, // Surface all qualified strengths (never silently cap)
+          moderateGaps: derivedModerateGaps,
+          criticalGaps: derivedCriticalGaps,
+          gaps: [...derivedCriticalGaps, ...derivedModerateGaps],
           priorityActions: parsedActions.slice(0, 1).map((act: any) => ({
             ...act,
             nextStep: 'Complete step-by-step roadmap available in paid executive report.',

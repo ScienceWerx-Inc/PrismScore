@@ -28,6 +28,8 @@ interface ResultData {
   band: string;
   perDimensionPercentages: Record<string, number>;
   strengths: string[];
+  moderateGaps?: string[];
+  criticalGaps?: string[];
   gaps: string[];
   priorityActions: Array<{
     dimension: string;
@@ -350,15 +352,21 @@ export default function CompanyReportPage() {
 
         {/* FULL EXECUTIVE REPORT CONTENT & PAYWALL GATE */}
         <div className="space-y-8">
-          {/* Key Strengths & Critical Gaps */}
+          {/* Key Strengths & Operational Gaps (3-Tier Structure) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-emerald-200/80 shadow-sm">
-              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-emerald-100 text-emerald-800 font-bold">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <h3>Key Organizational Strengths</h3>
+            {/* Strengths (>=70%) */}
+            <div className="bg-white rounded-2xl p-6 border border-emerald-200/80 shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+                <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <h3>Key Organizational Strengths</h3>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Established (&ge;70%)
+                </span>
               </div>
               {result.strengths && result.strengths.length > 0 ? (
-                <ul className="space-y-3">
+                <ul className="space-y-3 mt-1.5">
                   {result.strengths.map((str, i) => (
                     <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
@@ -368,30 +376,79 @@ export default function CompanyReportPage() {
                 </ul>
               ) : (
                 <p className="text-xs text-slate-500">
-                  Scores indicate early-stage maturity across all 5 dimensions. Foundational training is recommended.
+                  Scores indicate early-stage maturity across all 5 dimensions. Foundational education recommended.
                 </p>
               )}
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-rose-200/80 shadow-sm">
-              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-rose-100 text-rose-800 font-bold">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
-                <h3>Critical Gaps & Operational Vulnerabilities</h3>
+            {/* Gaps & Vulnerabilities (Critical <=40% & Moderate 41-69%) */}
+            <div className="bg-white rounded-2xl p-6 border border-rose-200/80 shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-rose-100">
+                <div className="flex items-center gap-2 text-rose-800 font-bold">
+                  <AlertTriangle className="w-5 h-5 text-rose-600" />
+                  <h3>Operational Gaps & Vulnerabilities</h3>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  Action Required
+                </span>
               </div>
-              {result.gaps && result.gaps.length > 0 ? (
-                <ul className="space-y-3">
-                  {result.gaps.map((gap, i) => (
-                    <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                      <span>{gap}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-emerald-600 font-medium">
-                  No critical low-scoring dimensions detected (&gt;40% across all areas).
-                </p>
+
+              {/* Critical Gaps (<=40%) */}
+              {result.criticalGaps && result.criticalGaps.length > 0 && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    Critical Gaps (&le;40%)
+                  </span>
+                  <ul className="space-y-2 mt-1">
+                    {result.criticalGaps.map((gap, i) => (
+                      <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5 flex-shrink-0" />
+                        <span>{gap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
+
+              {/* Moderate Gaps (41%–69%) */}
+              {result.moderateGaps && result.moderateGaps.length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    Moderate Gaps (41%–69%)
+                  </span>
+                  <ul className="space-y-2 mt-1">
+                    {result.moderateGaps.map((gap, i) => (
+                      <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                        <span>{gap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Legacy fallback */}
+              {(!result.criticalGaps || result.criticalGaps.length === 0) &&
+                (!result.moderateGaps || result.moderateGaps.length === 0) &&
+                result.gaps &&
+                result.gaps.length > 0 && (
+                  <ul className="space-y-3">
+                    {result.gaps.map((gap, i) => (
+                      <li key={i} className="text-xs text-slate-700 flex items-start gap-2.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                        <span>{gap}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+              {(!result.criticalGaps || result.criticalGaps.length === 0) &&
+                (!result.moderateGaps || result.moderateGaps.length === 0) &&
+                (!result.gaps || result.gaps.length === 0) && (
+                  <p className="text-xs text-emerald-600 font-medium">
+                    No critical or moderate vulnerabilities detected (&ge;70% across all 5 dimensions).
+                  </p>
+                )}
             </div>
           </div>
 

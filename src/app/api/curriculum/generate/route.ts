@@ -115,7 +115,7 @@ export async function GET(request: Request) {
           },
           {
             title: 'Module 3: Vendor Vetting & SLA Enforceability',
-            description: 'Evaluating enterprise AI SaaS tools, zero-data-retention compliance, and business continuity risks.',
+            description: 'Evaluating enterprise AI SaaS tools, vendor non-retention compliance, and business continuity risks.',
           },
         ],
       },
