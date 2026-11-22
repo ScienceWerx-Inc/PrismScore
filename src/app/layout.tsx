@@ -1,12 +1,69 @@
 import type { Metadata } from 'next';
+import { Plus_Jakarta_Sans, Newsreader, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
-import { Sparkles, BarChart3, Users, BookOpen, Layers, Compass } from 'lucide-react';
+import { PrismBrandMark } from '@/components/PrismHero';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+});
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'PrismScore | Enterprise AI Literacy & Leadership Alignment by ScienceWerx',
-  description: 'Prism AI refracts company AI literacy, C-level alignment, and hidden resistance into a transparent 500-point benchmark and tailored learning tracks.',
+  description:
+    'Prism AI refracts company AI literacy, C-level alignment, and hidden resistance into a transparent 500-point benchmark and tailored learning tracks.',
 };
+
+const NAV_LINKS = [
+  { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/#scoring-formula', label: 'Scoring Formula' },
+  { href: '/#executive-report', label: 'Executive Report' },
+  { href: '/dashboard/curriculum', label: 'Resources' },
+  { href: '/#faq', label: 'FAQ' },
+];
+
+const FOOTER_COLUMNS = [
+  {
+    title: 'Platform',
+    links: [
+      { href: '/#how-it-works', label: 'How It Works' },
+      { href: '/#scoring-formula', label: 'Scoring Formula' },
+      { href: '/#executive-report', label: 'Executive Report' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { href: '/dashboard/curriculum', label: 'Articles & Insights' },
+      { href: '/dashboard/three-sixty', label: 'Frameworks & Guides' },
+      { href: '/dashboard', label: 'Sample Report' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { href: '/#how-it-works', label: 'About ScienceWerx' },
+      { href: '/#faq', label: 'Privacy Policy' },
+      { href: '/#faq', label: 'Terms of Use' },
+    ],
+  },
+];
 
 export default function RootLayout({
   children,
@@ -14,111 +71,95 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-brand-500 selection:text-white">
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 no-print">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-brand-500/25 group-hover:scale-105 transition-transform">
-                <Compass className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="leading-tight tracking-tight flex items-center gap-1.5 font-black text-slate-950">
-                  Prism<span className="text-brand-600">Score</span>
-                  <span className="text-[10px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
-                    ScienceWerx
-                  </span>
+    <html
+      lang="en"
+      className={`${plusJakartaSans.className} ${newsreader.variable} ${plexMono.variable}`}
+    >
+      <body className={`${plusJakartaSans.className} min-h-screen flex flex-col text-white antialiased selection:bg-prism-600 selection:text-white`}>
+        <header className="relative z-50 bg-ink border-b border-white/[0.06] no-print">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-prism-300">
+              <PrismBrandMark className="w-9 h-7" />
+              <span className="flex flex-col">
+                <span className="text-xl font-extrabold tracking-[-0.03em] text-white leading-none">
+                  PrismScore
                 </span>
-                <span className="text-[11px] text-slate-400 font-normal">Enterprise AI Literacy & Alignment</span>
-              </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/45 mt-1">
+                  by ScienceWerx
+                </span>
+              </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
-              <Link
-                href="/"
-                className="px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              >
-                Overview
-              </Link>
-              <Link
-                href="/dashboard"
-                className="px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
-              >
-                <BarChart3 className="w-4 h-4 text-brand-600" />
-                Leadership Heatmaps
-              </Link>
-              <Link
-                href="/dashboard/three-sixty"
-                className="px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
-              >
-                <Users className="w-4 h-4 text-purple-600" />
-                360 Staff View
-              </Link>
-              <Link
-                href="/dashboard/curriculum"
-                className="px-3 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
-              >
-                <BookOpen className="w-4 h-4 text-emerald-600" />
-                Tailored Courses
-              </Link>
-            </nav>
+            <div className="flex items-center gap-6 lg:gap-8">
+              <nav aria-label="Main" className="hidden md:flex items-center gap-6 text-sm font-medium text-white/65">
+                {NAV_LINKS.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
 
-            <div className="flex items-center gap-3">
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-sm shadow-brand-600/30 transition-all hover:shadow"
-              >
-                Start Assessment
-              </Link>
+              <div className="flex items-center gap-4 shrink-0">
+                <Link
+                  href="/dashboard"
+                  className="hidden sm:inline text-sm font-semibold text-white/80 hover:text-white transition-colors"
+                >
+                  View Demo
+                </Link>
+                <Link
+                  href="/onboarding"
+                  className="inline-flex items-center justify-center whitespace-nowrap px-3.5 sm:px-4 py-2.5 rounded-lg text-sm font-semibold text-ink bg-white hover:bg-prism-50 shadow-[0_8px_30px_-8px_rgba(139,116,250,0.6)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-prism-300"
+                >
+                  <span className="sm:hidden">Start Assessment</span>
+                  <span className="hidden sm:inline">Start Free Assessment</span>
+                </Link>
+              </div>
             </div>
           </div>
         </header>
 
         <main className="flex-1 flex flex-col">{children}</main>
 
-        <footer className="bg-slate-900 text-slate-400 text-sm py-12 border-t border-slate-800 no-print">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 font-bold text-white text-base">
-                <Compass className="w-4 h-4 text-brand-400" />
-                PrismScore™ by ScienceWerx
+        <footer className="bg-ink text-stone-400 border-t border-white/[0.06] no-print">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
+            <div className="grid grid-cols-2 md:grid-cols-12 gap-8 items-start">
+              <div className="col-span-2 md:col-span-5">
+                <div className="flex items-center gap-3">
+                  <PrismBrandMark className="w-8 h-7 shrink-0" />
+                  <div className="text-white font-extrabold text-lg leading-none tracking-[-0.02em]">
+                    PrismScore
+                  </div>
+                </div>
+                <p className="mt-4 max-w-xs text-sm text-stone-400 leading-relaxed">
+                  A company assessment that reveals AI readiness, leadership alignment, and adoption risks.
+                </p>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Refracting enterprise AI readiness into transparent dimensions, C-level alignment heatmaps, and structured upskilling gap profiles.
-              </p>
-              <div className="text-xs text-slate-500">
-                Modeled after the transparent scoring standards of iStartup Score.
-              </div>
+
+              {FOOTER_COLUMNS.map((col) => (
+                <div key={col.title} className="md:col-span-2">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-4">
+                    {col.title}
+                  </div>
+                  <ul className="space-y-2.5 text-sm">
+                    {col.links.map((link) => (
+                      <li key={link.label}>
+                        <Link href={link.href} className="text-stone-300 hover:text-white transition-colors">
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
 
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Diagnostic Tools</div>
-              <ul className="space-y-2 text-xs">
-                <li><Link href="/onboarding" className="hover:text-white transition-colors">Prism Company Assessment (25 Qs)</Link></li>
-                <li><Link href="/dashboard" className="hover:text-white transition-colors">C-Level Alignment Heatmap</Link></li>
-                <li><Link href="/dashboard" className="hover:text-white transition-colors">Executive Resistance Radar</Link></li>
-                <li><Link href="/dashboard/three-sixty" className="hover:text-white transition-colors">360 Staff Diagnostic</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Transparency & Ethics</div>
-              <ul className="space-y-2 text-xs">
-                <li><span className="text-slate-300">Published Formula:</span> 500-pt Weighted</li>
-                <li><span className="text-slate-300">Privacy Safeguards:</span> Individual C-level confidential</li>
-                <li><span className="text-slate-300">360 Anonymity:</span> Minimum 5 respondents</li>
-                <li><span className="text-slate-300">Self-Reported Limit:</span> Non-verifying audit</li>
-              </ul>
-            </div>
-
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">ScienceWerx Ecosystem</div>
-              <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                Seamlessly connects PrismScore gap profiles with customized AI curriculum generation and enterprise solution integration.
-              </p>
-              <div className="text-[11px] text-slate-500">
-                © {new Date().getFullYear()} ScienceWerx. All rights reserved.
-              </div>
+            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-stone-500">
+              <span>© {new Date().getFullYear()} ScienceWerx</span>
+              <span>PrismScore · 500-point readiness benchmark</span>
             </div>
           </div>
         </footer>
