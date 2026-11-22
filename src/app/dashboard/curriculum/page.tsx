@@ -102,7 +102,7 @@ export default function CurriculumPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={handleCopyJson}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] hover:bg-white/[0.06] border border-white/15 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 transition-colors shadow-sm"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copied JSON' : 'Copy Course JSON'}
@@ -165,7 +165,7 @@ export default function CurriculumPage() {
             {executiveTracks.map((track: any) => (
               <div
                 key={track.role}
-                className="bg-white/[0.04] rounded-2xl p-6 border border-white/10 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow space-y-4"
+                className="bg-white/[0.04] rounded-2xl p-6 border border-white/10 shadow-sm flex flex-col justify-between hover:bg-white/[0.08] hover:border-white/15 transition-colors space-y-4"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">

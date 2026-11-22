@@ -461,7 +461,7 @@ function AssessmentContent() {
                   onClick={() => setCurrentIndex(idx)}
                   className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
                     isCurrent
-                      ? 'bg-brand-600 text-white ring-2 ring-brand-500 ring-offset-1'
+                      ? 'bg-brand-600 text-white ring-2 ring-brand-500 ring-offset-1 ring-offset-ink'
                       : isAnswered
                       ? 'bg-emerald-400/15 text-emerald-200 border border-emerald-400/40'
                       : 'bg-white/[0.06] text-white/50 hover:bg-white/10'
@@ -540,7 +540,7 @@ function AssessmentContent() {
             type="button"
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white/65 hover:text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-colors disabled:opacity-40 flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white/65 hover:text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors disabled:opacity-40 flex items-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             Previous
