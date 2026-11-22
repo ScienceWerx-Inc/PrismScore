@@ -313,7 +313,7 @@ export default function OnboardingPage() {
                     type="checkbox"
                     checked={alsoTakesClevel}
                     onChange={(e) => setAlsoTakesClevel(e.target.checked)}
-                    className="w-4 h-4 rounded text-brand-300 focus:ring-brand-500"
+                    className="w-4 h-4 rounded accent-brand-500 focus:ring-brand-500"
                   />
                   <span>I will also take the C-level executive assessment</span>
                 </label>

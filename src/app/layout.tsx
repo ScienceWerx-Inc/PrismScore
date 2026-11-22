@@ -84,7 +84,7 @@ export default function RootLayout({
                 <span className="text-xl font-extrabold tracking-[-0.03em] text-white leading-none">
                   PrismScore
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/45 mt-1">
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/50 mt-1">
                   by ScienceWerx
                 </span>
               </span>
@@ -106,7 +106,7 @@ export default function RootLayout({
               <div className="flex items-center gap-4 shrink-0">
                 <Link
                   href="/dashboard"
-                  className="hidden sm:inline text-sm font-semibold text-white/80 hover:text-white transition-colors"
+                  className="hidden sm:inline text-sm font-semibold text-white/75 hover:text-white transition-colors"
                 >
                   View Demo
                 </Link>
@@ -124,7 +124,7 @@ export default function RootLayout({
 
         <main className="flex-1 flex flex-col">{children}</main>
 
-        <footer className="bg-ink text-stone-400 border-t border-white/[0.06] no-print">
+        <footer className="bg-ink text-white/65 border-t border-white/[0.06] no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
             <div className="grid grid-cols-2 md:grid-cols-12 gap-8 items-start">
               <div className="col-span-2 md:col-span-5">
@@ -134,20 +134,20 @@ export default function RootLayout({
                     PrismScore
                   </div>
                 </div>
-                <p className="mt-4 max-w-xs text-sm text-stone-400 leading-relaxed">
+                <p className="mt-4 max-w-xs text-sm text-white/65 leading-relaxed">
                   A company assessment that reveals AI readiness, leadership alignment, and adoption risks.
                 </p>
               </div>
 
               {FOOTER_COLUMNS.map((col) => (
                 <div key={col.title} className="md:col-span-2">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-4">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-white/50 mb-4">
                     {col.title}
                   </div>
                   <ul className="space-y-2.5 text-sm">
                     {col.links.map((link) => (
                       <li key={link.label}>
-                        <Link href={link.href} className="text-stone-300 hover:text-white transition-colors">
+                        <Link href={link.href} className="text-white/75 hover:text-white transition-colors">
                           {link.label}
                         </Link>
                       </li>
@@ -157,7 +157,7 @@ export default function RootLayout({
               ))}
             </div>
 
-            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-stone-500">
+            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-white/50">
               <span>© {new Date().getFullYear()} ScienceWerx</span>
               <span>PrismScore · 500-point readiness benchmark</span>
             </div>

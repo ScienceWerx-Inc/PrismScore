@@ -175,7 +175,7 @@ function SectionHead({
         {title}
       </h2>
       {lede && (
-        <p className="mt-5 max-w-md text-base leading-relaxed text-white/60">{lede}</p>
+        <p className="mt-5 max-w-md text-base leading-relaxed text-white/65">{lede}</p>
       )}
     </Reveal>
   );
@@ -273,7 +273,7 @@ export default function LandingPage() {
                   idx >= 2 ? 'border-t border-white/10 lg:border-t-0' : ''
                 } ${idx === 2 ? 'lg:border-l' : ''}`}
               >
-                <dt className={`${MONO_LABEL} text-[10px] text-white/45`}>{fact.label}</dt>
+                <dt className={`${MONO_LABEL} text-[10px] text-white/50`}>{fact.label}</dt>
                 <dd className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white tabular-nums">
                   {fact.figure}
                 </dd>
@@ -295,7 +295,7 @@ export default function LandingPage() {
               className="lg:col-span-7"
             />
             <Reveal y={16} delay={0.05} className="lg:col-span-5">
-              <p className="text-base leading-relaxed text-white/60 max-w-md lg:ml-auto">
+              <p className="text-base leading-relaxed text-white/65 max-w-md lg:ml-auto">
                 A simple, proven process from company assessment to a tailored action
                 plan. The first two steps are free.
               </p>
@@ -312,11 +312,11 @@ export default function LandingPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-sm text-white/45">{step.num}</span>
+                      <span className="font-mono text-sm text-white/50">{step.num}</span>
                       <span
                         className={`${MONO_LABEL} text-[10px] rounded-md px-2 py-1 ${
                           step.tier === 'Free'
-                            ? 'bg-white/[0.06] text-white/60'
+                            ? 'bg-white/[0.06] text-white/65'
                             : 'bg-prism-500/15 text-prism-200'
                         }`}
                       >
@@ -339,7 +339,7 @@ export default function LandingPage() {
                     <h3 className="mt-8 text-lg font-semibold tracking-[-0.015em] text-white">
                       {step.title}
                     </h3>
-                    <p className="mt-2 text-[15px] leading-relaxed text-white/55">
+                    <p className="mt-2 text-[15px] leading-relaxed text-white/65">
                       {step.description}
                     </p>
                   </div>
@@ -371,7 +371,7 @@ export default function LandingPage() {
                       <span className="h-2 w-2 rounded-full bg-white/15" />
                       <span className="h-2 w-2 rounded-full bg-white/15" />
                       <span className="h-2 w-2 rounded-full bg-white/15" />
-                      <span className={`${MONO_LABEL} text-[10px] text-white/35 ml-2`}>formula</span>
+                      <span className={`${MONO_LABEL} text-[10px] text-white/50 ml-2`}>formula</span>
                     </div>
                     <div className="px-4 py-4 font-mono text-[13px] sm:text-sm leading-relaxed text-white/90 break-words">
                       <span className="text-sky-300">score</span>
@@ -389,7 +389,7 @@ export default function LandingPage() {
                       ))}
                       <span className="text-white/40">)</span>
                     </div>
-                    <figcaption className="px-4 pb-4 text-sm leading-relaxed text-white/45">
+                    <figcaption className="px-4 pb-4 text-sm leading-relaxed text-white/50">
                       Each letter is the percentage earned in that dimension, from its 5
                       questions.
                     </figcaption>
@@ -397,7 +397,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="lg:col-span-7">
-                  <h3 className={`${MONO_LABEL} text-white/45`}>Weighted dimensions</h3>
+                  <h3 className={`${MONO_LABEL} text-white/50`}>Weighted dimensions</h3>
                   <table className="mt-4 w-full text-left border-collapse">
                     <thead className="sr-only">
                       <tr>
@@ -428,14 +428,14 @@ export default function LandingPage() {
                                 />
                               </div>
                             </td>
-                            <td className="py-4 px-2 text-right font-mono text-sm text-white/55 tabular-nums align-top w-16">
+                            <td className="py-4 px-2 text-right font-mono text-sm text-white/65 tabular-nums align-top w-16">
                               {Math.round(dim.weight * 100)}%
                             </td>
                             <td className="py-4 pl-2 text-right align-top w-20">
                               <span className="text-2xl font-semibold leading-none tracking-[-0.03em] text-white tabular-nums">
                                 {maxPoints}
                               </span>
-                              <span className={`${MONO_LABEL} block text-[9px] text-white/35 mt-1.5`}>
+                              <span className={`${MONO_LABEL} block text-[9px] text-white/50 mt-1.5`}>
                                 max pts
                               </span>
                             </td>
@@ -450,8 +450,8 @@ export default function LandingPage() {
               {/* Readiness scale */}
               <div className="mt-16 pt-10 border-t border-white/[0.08]">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className={`${MONO_LABEL} text-white/45`}>Readiness bands</h3>
-                  <span className={`${MONO_LABEL} text-white/35`}>Total score out of 500</span>
+                  <h3 className={`${MONO_LABEL} text-white/50`}>Readiness bands</h3>
+                  <span className={`${MONO_LABEL} text-white/50`}>Total score out of 500</span>
                 </div>
 
                 <div className="mt-5 hidden md:block" aria-hidden="true">
@@ -490,7 +490,7 @@ export default function LandingPage() {
                       <div className="flex items-center gap-2.5">
                         <span className={`w-2 h-2 rounded-full ${band.swatch} ${band.glow}`} aria-hidden="true" />
                         <span className="text-[15px] font-semibold text-white">{band.name}</span>
-                        <span className="font-mono text-xs text-white/45 tabular-nums">{band.range}</span>
+                        <span className="font-mono text-xs text-white/50 tabular-nums">{band.range}</span>
                       </div>
                       <p className="mt-2 text-sm leading-relaxed text-white/50 max-w-[18rem]">
                         {band.description}
@@ -531,7 +531,7 @@ export default function LandingPage() {
                     {plan.full && (
                       <div className="spectrum absolute inset-x-6 top-0 h-px opacity-80" aria-hidden="true" />
                     )}
-                    <h3 className="text-sm font-semibold text-white/80">{plan.name}</h3>
+                    <h3 className="text-sm font-semibold text-white/75">{plan.name}</h3>
                     <div className="mt-3 text-5xl font-semibold tracking-[-0.04em] text-white tabular-nums">
                       {plan.price}
                     </div>
@@ -542,12 +542,12 @@ export default function LandingPage() {
                           <li
                             key={row.feature}
                             className={`flex items-start gap-3 text-[15px] ${
-                              included ? 'text-white/85' : 'text-white/35'
+                              included ? 'text-white/85' : 'text-white/50'
                             }`}
                           >
                             {included ? (
                               <Check
-                                className={`w-4 h-4 mt-0.5 shrink-0 ${plan.full ? 'text-prism-300' : 'text-white/80'}`}
+                                className={`w-4 h-4 mt-0.5 shrink-0 ${plan.full ? 'text-prism-300' : 'text-white/75'}`}
                                 aria-hidden="true"
                               />
                             ) : (
@@ -594,7 +594,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <PrismBrandMark className="w-5 h-4" />
-                      <span className={`${MONO_LABEL} text-[10px] text-white/55`}>
+                      <span className={`${MONO_LABEL} text-[10px] text-white/65`}>
                         Executive Report · Sample
                       </span>
                     </div>
@@ -639,7 +639,7 @@ export default function LandingPage() {
                             <span className="text-4xl font-semibold leading-none tracking-[-0.04em] text-white tabular-nums">
                               <CountUp to={328} />
                             </span>
-                            <span className="font-mono text-[10px] text-white/45 mt-1.5">/ 500</span>
+                            <span className="font-mono text-[10px] text-white/50 mt-1.5">/ 500</span>
                           </div>
                         </div>
                         <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-200">
@@ -678,7 +678,7 @@ export default function LandingPage() {
 
                 {/* Floating insight chip */}
                 <div className="glass absolute -bottom-6 right-4 sm:-right-6 rounded-xl px-4 py-3 hidden sm:block">
-                  <div className={`${MONO_LABEL} text-[9px] text-white/45`}>Lowest dimension</div>
+                  <div className={`${MONO_LABEL} text-[9px] text-white/50`}>Lowest dimension</div>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-sm font-semibold text-white">People &amp; Skills</span>
                     <span className="font-mono text-xs text-amber-300">55%</span>
@@ -744,7 +744,7 @@ export default function LandingPage() {
                           aria-expanded={isOpen}
                           aria-controls={panelId}
                           className={`w-full text-left px-4 py-5 flex items-start justify-between gap-6 rounded-xl text-base sm:text-[17px] font-medium transition-colors ${
-                            isOpen ? 'text-white' : 'text-white/80 hover:text-white'
+                            isOpen ? 'text-white' : 'text-white/75 hover:text-white'
                           } ${FOCUS_RING}`}
                         >
                           <span>{faq.q}</span>
@@ -768,7 +768,7 @@ export default function LandingPage() {
                             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                             className="overflow-hidden"
                           >
-                            <p className="px-4 pb-6 pr-14 max-w-2xl text-[15px] leading-relaxed text-white/55">
+                            <p className="px-4 pb-6 pr-14 max-w-2xl text-[15px] leading-relaxed text-white/65">
                               {faq.a}
                             </p>
                           </motion.div>
@@ -798,7 +798,7 @@ export default function LandingPage() {
                       ten minutes.
                     </span>
                   </h2>
-                  <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/60">
+                  <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/65">
                     Take the 25-question company assessment now and get your score out of
                     500 and your readiness band straight away.
                   </p>

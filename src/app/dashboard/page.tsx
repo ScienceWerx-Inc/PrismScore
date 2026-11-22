@@ -424,7 +424,7 @@ export default function DashboardPage() {
             <p className="text-sm text-white/60 max-w-lg mx-auto leading-relaxed">
               To safeguard psychological safety and prevent identifying individual leader feedback, team heatmaps require at least {effectiveThreshold} completed executive assessments.
             </p>
-            <div className="inline-block bg-ink-700 text-white/60 text-xs px-4 py-2 rounded-xl border border-white/10">
+            <div className="inline-block bg-white/[0.04] text-white/60 text-xs px-4 py-2 rounded-xl border border-white/10">
               Currently {completedCount} of {effectiveThreshold} completed. Send reminders above or use the toggle to test.
             </div>
           </div>
@@ -664,7 +664,7 @@ export default function DashboardPage() {
         {/* INVITE NEW EXECUTIVE MODAL */}
         {newInviteModal && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white/[0.04] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/10">
+            <div className="bg-ink-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/10">
               <h3 className="text-xl font-bold text-white mb-1">
                 Invite C-Level Leader
               </h3>
@@ -683,7 +683,7 @@ export default function DashboardPage() {
                     placeholder="e.g. Jordan Hayes"
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 text-xs focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
 
@@ -697,7 +697,7 @@ export default function DashboardPage() {
                     placeholder="jordan@company.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 text-xs focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
 
@@ -708,7 +708,7 @@ export default function DashboardPage() {
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 text-xs focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="CTO">Chief Technology Officer (CTO)</option>
                     <option value="CFO">Chief Financial Officer (CFO)</option>

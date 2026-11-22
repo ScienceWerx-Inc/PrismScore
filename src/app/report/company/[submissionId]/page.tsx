@@ -206,7 +206,7 @@ export default function CompanyReportPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] border border-white/15 hover:bg-white/[0.06] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] border border-white/15 hover:bg-white/[0.08] transition-colors shadow-sm"
             >
               <Printer className="w-4 h-4 text-white/50" />
               Print / Save PDF
@@ -287,7 +287,7 @@ export default function CompanyReportPage() {
               {/* Dimension Weight Defensibility Rationale */}
               <div className="mt-4 pt-3 border-t border-white/[0.06]">
                 <details className="text-xs text-white/50 group">
-                  <summary className="font-semibold text-brand-300 hover:text-brand-300 cursor-pointer flex items-center gap-1 select-none">
+                  <summary className="font-semibold text-brand-300 hover:text-brand-200 cursor-pointer flex items-center gap-1 select-none">
                     <span>Why are dimensions weighted this way?</span>
                   </summary>
                   <div className="mt-2.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2 text-[11px] text-white/65 leading-relaxed">
@@ -318,7 +318,7 @@ export default function CompanyReportPage() {
 
             <Link
               href={`/dashboard?companyId=${company?.id || ''}`}
-              className="px-6 py-3.5 rounded-xl font-bold bg-white/[0.04] text-purple-100 hover:bg-purple-400/10 shadow-md text-xs sm:text-sm flex-shrink-0 transition-transform active:scale-95 flex items-center gap-2"
+              className="px-6 py-3.5 rounded-xl font-bold bg-white text-ink hover:bg-brand-50 shadow-md text-xs sm:text-sm flex-shrink-0 transition-transform active:scale-95 flex items-center gap-2"
             >
               Invite Leadership Team
               <ArrowRight className="w-4 h-4" />
@@ -342,7 +342,7 @@ export default function CompanyReportPage() {
 
               <button
                 onClick={() => setCheckoutModal(true)}
-                className="px-8 py-4 rounded-xl font-bold bg-white/[0.04] text-brand-200 hover:bg-brand-400/10 shadow-lg shadow-black/20 text-sm flex-shrink-0 transition-transform active:scale-95"
+                className="px-8 py-4 rounded-xl font-bold bg-white text-ink hover:bg-brand-50 shadow-lg shadow-black/20 text-sm flex-shrink-0 transition-transform active:scale-95"
               >
                 Unlock Full Report — $149
               </button>
@@ -588,7 +588,7 @@ export default function CompanyReportPage() {
         {/* CHECKOUT MODAL */}
         {checkoutModal && (
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white/[0.04] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/10">
+            <div className="bg-ink-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/10">
               <div className="w-12 h-12 rounded-2xl bg-brand-400/10 text-brand-300 flex items-center justify-center mb-4 border border-brand-400/25">
                 <ShieldCheck className="w-6 h-6" />
               </div>

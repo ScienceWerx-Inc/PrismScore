@@ -121,7 +121,7 @@ export default function ThreeSixtyPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] hover:bg-white/[0.06] border border-white/15 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white/75 bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 transition-colors shadow-sm"
             >
               Back to C-Level Dashboard
             </Link>
@@ -199,7 +199,7 @@ export default function ThreeSixtyPage() {
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
                 placeholder="Name, email@company.com, Department"
-                className="w-full p-3 font-mono text-xs rounded-xl border border-white/15 focus:ring-2 focus:ring-purple-500"
+                className="w-full p-3 font-mono text-xs rounded-xl border border-white/15 bg-white/[0.03] focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
               <div className="flex items-center justify-end gap-3">
                 <button
