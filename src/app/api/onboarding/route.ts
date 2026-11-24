@@ -10,19 +10,22 @@ export async function POST(request: Request) {
       industry,
       sizeBand,
       country,
-      adminName,
       adminEmail,
       adminRole,
       alsoTakesClevel,
       executives = [],
     } = body;
 
-    if (!companyName || !adminEmail || !adminName) {
+    if (!companyName || !adminEmail) {
       return NextResponse.json(
-        { error: 'Company name, admin name, and email are required.' },
+        { error: 'Company name and work email are required.' },
         { status: 400 }
       );
     }
+
+    // Name is optional at sign-up; fall back to the email's local part
+    const adminName: string =
+      (typeof body.adminName === 'string' && body.adminName.trim()) || String(adminEmail).split('@')[0];
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
