@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PrismBrandMark } from '@/components/PrismHero';
@@ -35,8 +36,26 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const flow = isFlowRoute(pathname);
 
+  // On the home page the header floats over the hero photo until you scroll
+  const overHero = pathname === '/';
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!overHero) return;
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [overHero]);
+  const transparent = overHero && !scrolled;
+
   return (
-    <header className="sticky top-0 z-50 bg-ink/85 backdrop-blur-xl supports-[backdrop-filter]:bg-ink/75 border-b border-white/[0.08] no-print">
+    <header
+      className={`sticky top-0 z-50 border-b transition-[background-color,border-color,backdrop-filter] duration-300 no-print ${
+        transparent
+          ? 'bg-transparent border-transparent'
+          : 'bg-ink/85 backdrop-blur-xl supports-[backdrop-filter]:bg-ink/75 border-white/[0.08]'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         <Wordmark />
 

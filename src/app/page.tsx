@@ -572,10 +572,13 @@ export default function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
     <ScrollProgress />
-    <div className="relative flex flex-col bg-paper text-ink overflow-hidden">
+    {/* -mt-20 slides the page up under the 5rem header, so the hero photo starts at the very top */}
+    <div className="relative -mt-20 flex flex-col bg-paper text-ink overflow-hidden">
       {/* 1. HERO */}
-      <section className="relative isolate overflow-hidden bg-ink text-white">
+      {/* pt-20 keeps the hero copy clear of the header that floats over it */}
+      <section className="relative isolate overflow-hidden bg-ink text-white pt-20">
         <ParallaxImage src="/images/hero-leader.png" priority distance={50} className="object-[68%_center] animate-kenburns" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-ink/70 to-transparent" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-0 -z-10 hidden md:block" aria-hidden="true">
           {MOTES.map((m, i) => (
             <span
