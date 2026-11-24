@@ -1,5 +1,7 @@
 'use client';
 
+import { handleRadioKeys, radioTabIndex } from '@/lib/radioKeys';
+import { SHOW_DEV_TOOLS } from '@/lib/flags';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { calculateCompanyScore, DimensionKey } from '@/lib/scoring';
@@ -306,8 +308,8 @@ function AssessmentContent() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12">
-        <Loader2 className="w-8 h-8 text-brand-300 animate-spin mb-4" />
-        <p className="text-white/65 text-sm font-medium">Loading 25 Company Assessment Questions...</p>
+        <Loader2 className="w-8 h-8 text-brand-600 animate-spin mb-4" />
+        <p className="text-slate-600 text-sm font-medium">Loading 25 Company Assessment Questions...</p>
       </div>
     );
   }
@@ -315,7 +317,7 @@ function AssessmentContent() {
   if (questions.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-white/75 font-semibold mb-2">No questions loaded in database.</p>
+        <p className="text-slate-700 font-semibold mb-2">No questions loaded in database.</p>
         <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-bold"
@@ -328,33 +330,33 @@ function AssessmentContent() {
 
   // Timer Color Mapping
   const timerRatio = timerDuration > 0 ? timeLeft / timerDuration : 1;
-  let timerBadgeColor = 'bg-blue-400/10 text-blue-300 border-blue-400/25';
-  let timerRingColor = 'text-blue-300';
+  let timerBadgeColor = 'bg-brand-50 text-brand-700 border-brand-200';
+  let timerRingColor = 'text-brand-600';
   if (timeLeft <= 5) {
-    timerBadgeColor = 'bg-rose-400/15 text-rose-200 border-rose-400/40 animate-pulse';
-    timerRingColor = 'text-rose-300';
+    timerBadgeColor = 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse';
+    timerRingColor = 'text-rose-600';
   } else if (timeLeft <= 10) {
-    timerBadgeColor = 'bg-amber-400/15 text-amber-200 border-amber-400/40';
-    timerRingColor = 'text-amber-300';
+    timerBadgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
+    timerRingColor = 'text-amber-600';
   }
 
   return (
-    <div className="flex-1 bg-white/[0.03] py-8 px-4 sm:px-6">
+    <div className="flex-1 bg-paper py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Top Header & Timed Bar */}
-        <div className="bg-white/[0.04] rounded-2xl p-5 border border-white/10 shadow-sm">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded bg-brand-400/10 text-brand-300 border border-brand-400/25">
+                <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
                   {currentDimension?.name || 'Company Assessment'}
                 </span>
-                <span className="text-xs font-semibold text-white/50">
+                <span className="text-xs font-semibold text-slate-500">
                   Weight: {currentDimension ? `${currentDimension.weight * 100}%` : '20%'}
                 </span>
               </div>
-              <h1 className="text-base sm:text-lg font-bold text-white mt-1">
-                Company AI Diagnostic — Question {currentIndex + 1} of {questions.length}
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                Company AI diagnostic — question {currentIndex + 1} of {questions.length}
               </h1>
             </div>
 
@@ -366,7 +368,7 @@ function AssessmentContent() {
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${timerBadgeColor}`}
                 >
                   <Timer className={`w-4 h-4 ${timerRingColor}`} />
-                  <span className="tabular-nums text-sm font-black">
+                  <span className="tabular-nums text-sm font-extrabold">
                     {timeLeft}s
                   </span>
                   <span className="text-[10px] font-normal uppercase opacity-75">
@@ -377,7 +379,7 @@ function AssessmentContent() {
                     type="button"
                     onClick={() => setIsTimerPaused(!isTimerPaused)}
                     title={isTimerPaused ? 'Resume Timer' : 'Pause Timer'}
-                    className="p-1 rounded-md hover:bg-white/10 transition-colors ml-1"
+                    className="p-1 rounded-md hover:bg-black/5 transition-colors ml-1"
                   >
                     {isTimerPaused ? (
                       <Play className="w-3.5 h-3.5 fill-current" />
@@ -388,61 +390,51 @@ function AssessmentContent() {
                 </div>
               )}
 
-              {/* Timer Duration Selector */}
-              <select
-                value={timerDuration}
-                onChange={(e) => setTimerDuration(parseInt(e.target.value))}
-                className="px-2.5 py-1.5 rounded-xl border border-white/15 text-xs font-semibold bg-white/[0.03] text-white/75 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              >
-                <option value={30}>30s per question</option>
-                <option value={45}>45s per question</option>
-                <option value={60}>60s per question</option>
-                <option value={0}>Untimed</option>
-              </select>
-
+              {SHOW_DEV_TOOLS && (
               <button
                 type="button"
                 onClick={handleAutoFill}
                 title="Populate realistic responses for fast demonstration"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-300 bg-indigo-400/10 border border-indigo-400/25 hover:bg-indigo-400/15 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition-colors"
               >
                 <Wand2 className="w-3.5 h-3.5" />
                 Sample Data
               </button>
+              )}
             </div>
           </div>
 
           {/* Time Expired Notice */}
           {timedOutNotice && (
-            <div className="mb-3 p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/25 text-amber-200 text-xs font-semibold flex items-center gap-2 animate-bounce">
-              <AlertCircle className="w-4 h-4 text-amber-300" />
+            <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2 animate-bounce">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
               <span>{timedOutNotice}</span>
             </div>
           )}
 
           {/* Progress Bar & Timer bar */}
           <div className="space-y-1.5">
-            <div className="flex justify-between text-xs text-white/50 font-medium">
+            <div className="flex justify-between text-xs text-slate-500 font-medium">
               <span>Overall Progress: {answeredCount} of {questions.length} answered</span>
               <span>{progressPercent}% completed</span>
             </div>
-            <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-brand-600 to-indigo-600 transition-all duration-300"
+                className="h-full bg-gradient-to-r from-brand-600 to-brand-600 transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
 
             {/* Per-Question Sub-bar */}
             {timerDuration > 0 && (
-              <div className="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden mt-1">
+              <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mt-1">
                 <div
                   className={`h-full transition-all duration-1000 ${
                     timeLeft <= 5
                       ? 'bg-rose-500'
                       : timeLeft <= 10
                       ? 'bg-amber-500'
-                      : 'bg-blue-500'
+                      : 'bg-brand-500'
                   }`}
                   style={{ width: `${(timeLeft / timerDuration) * 100}%` }}
                 />
@@ -451,7 +443,7 @@ function AssessmentContent() {
           </div>
 
           {/* Quick Question Jump Buttons */}
-          <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap gap-1.5">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-1.5">
             {questions.map((q, idx) => {
               const isAnswered = Boolean(answers[q.id]);
               const isCurrent = idx === currentIndex;
@@ -461,10 +453,10 @@ function AssessmentContent() {
                   onClick={() => setCurrentIndex(idx)}
                   className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
                     isCurrent
-                      ? 'bg-brand-600 text-white ring-2 ring-brand-500 ring-offset-1 ring-offset-ink'
+                      ? 'bg-brand-600 text-white ring-2 ring-brand-500 ring-offset-1'
                       : isAnswered
-                      ? 'bg-emerald-400/15 text-emerald-200 border border-emerald-400/40'
-                      : 'bg-white/[0.06] text-white/50 hover:bg-white/10'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
                 >
                   {idx + 1}
@@ -476,17 +468,17 @@ function AssessmentContent() {
 
         {/* Current Question Card */}
         {currentQuestion && (
-          <div className="bg-white/[0.04] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-sm">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-start justify-between gap-3 mb-6">
               <div className="flex items-start gap-3">
-                <span className="w-8 h-8 rounded-xl bg-brand-400/10 text-brand-300 border border-brand-400/25 font-bold flex items-center justify-center text-sm flex-shrink-0">
+                <span className="w-8 h-8 rounded-xl bg-brand-50 text-brand-700 border border-brand-200 font-bold flex items-center justify-center text-sm flex-shrink-0">
                   {currentIndex + 1}
                 </span>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white leading-snug">
+                  <h2 id="question-text" className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
                     {currentQuestion.text}
                   </h2>
-                  <p className="text-xs text-white/50 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Select the option that most accurately reflects your company's operational reality.
                   </p>
                 </div>
@@ -504,24 +496,33 @@ function AssessmentContent() {
             </div>
 
             {/* Situation Options */}
-            <div className="space-y-3">
-              {currentQuestion.options.map((opt) => {
+            <div className="space-y-3" role="radiogroup" aria-labelledby="question-text">
+              {currentQuestion.options.map((opt, optIdx) => {
                 const isSelected = answers[currentQuestion.id] === opt.id;
                 return (
                   <button
                     key={opt.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={radioTabIndex(isSelected, optIdx, !!answers[currentQuestion.id])}
+                    onKeyDown={(e) =>
+                      handleRadioKeys(e, optIdx, currentQuestion.options.length, (i) =>
+                        handleSelectOption(currentQuestion.options[i].id)
+                      )
+                    }
                     onClick={() => handleSelectOption(opt.id)}
                     className={`w-full text-left p-4 rounded-xl border text-sm transition-all flex items-start gap-3.5 ${
                       isSelected
-                        ? 'border-brand-600 bg-brand-400/10 text-brand-100 font-medium ring-1 ring-brand-500 shadow-sm'
-                        : 'border-white/10 hover:border-white/15 hover:bg-white/[0.06] text-white/90'
+                        ? 'border-brand-600 bg-brand-50/50 text-brand-950 font-medium ring-1 ring-brand-500 shadow-sm'
+                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 text-slate-800'
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 mt-0.5 ${
                         isSelected
                           ? 'border-brand-600 bg-brand-600 text-white'
-                          : 'border-white/15 bg-white/[0.04]'
+                          : 'border-slate-300 bg-white'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -540,7 +541,7 @@ function AssessmentContent() {
             type="button"
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white/65 hover:text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors disabled:opacity-40 flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40 flex items-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             Previous
@@ -548,7 +549,7 @@ function AssessmentContent() {
 
           <div className="flex items-center gap-3">
             {savingStatus && (
-              <span className="text-xs text-white/40 font-medium flex items-center gap-1">
+              <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
                 <Save className="w-3.5 h-3.5 animate-pulse" />
                 {savingStatus}
               </span>
@@ -558,7 +559,7 @@ function AssessmentContent() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-sm shadow-brand-600/30 transition-all flex items-center gap-1.5"
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 shadow-sm shadow-brand-600/30 transition-all flex items-center gap-1.5"
               >
                 Next
                 <ArrowRight className="w-4 h-4" />
@@ -587,7 +588,7 @@ function AssessmentContent() {
 
 export default function AssessmentPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-white/50">Loading assessment...</div>}>
+    <Suspense fallback={<div className="p-12 text-center text-slate-500">Loading assessment...</div>}>
       <AssessmentContent />
     </Suspense>
   );

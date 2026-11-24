@@ -1,7 +1,11 @@
 'use client';
 
+import { DEMO_COMPANY_ID } from '@/lib/product';
+import { withCompany } from '@/lib/activeCompany';
+import { SHOW_DEV_TOOLS } from '@/lib/flags';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Dialog from '@/components/Dialog';
 import {
   BarChart3,
   Users,
@@ -86,7 +90,7 @@ export default function DashboardPage() {
         setNewInviteModal(false);
         setInviteName('');
         setInviteEmail('');
-        fetchDashboard();
+        fetchDashboard(data?.company?.id);
         setTimeout(() => setActionMessage(null), 3000);
       }
     } catch (e) {
@@ -102,7 +106,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ action: 'remind', invitationId }),
       });
       setActionMessage(`Reminder sent to ${email}`);
-      fetchDashboard();
+      fetchDashboard(data?.company?.id);
       setTimeout(() => setActionMessage(null), 3000);
     } catch (e) {
       alert('Error sending reminder');
@@ -118,7 +122,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ action: 'revoke', invitationId }),
       });
       setActionMessage('Invitation revoked');
-      fetchDashboard();
+      fetchDashboard(data?.company?.id);
       setTimeout(() => setActionMessage(null), 3000);
     } catch (e) {
       alert('Error revoking invitation');
@@ -128,8 +132,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12">
-        <RefreshCw className="w-8 h-8 text-brand-300 animate-spin mb-4" />
-        <p className="text-white/65 text-sm">Loading Executive Dashboard...</p>
+        <RefreshCw className="w-8 h-8 text-brand-600 animate-spin mb-4" />
+        <p className="text-slate-600 text-sm">Loading Executive Dashboard...</p>
       </div>
     );
   }
@@ -137,7 +141,7 @@ export default function DashboardPage() {
   if (!data || !data.company) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-white/75 font-bold mb-4">No company workspace found.</p>
+        <p className="text-slate-700 font-bold mb-4">No company workspace found.</p>
         <Link href="/onboarding" className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold">
           Create Company Workspace
         </Link>
@@ -149,44 +153,48 @@ export default function DashboardPage() {
 
   const effectiveThreshold = forceThreshold !== null ? forceThreshold : minThreshold;
   const isUnlocked = completedCount >= effectiveThreshold;
+  // Everyone listed in the roster: executives (incl. an admin who also takes the C-level) plus pending invites
+  const rosterTotal =
+    company.users.filter((u: any) => u.role === 'EXECUTIVE' || (u.role === 'ADMIN' && u.alsoTakesClevel)).length +
+    invitations.filter((inv: any) => !['ACCEPTED', 'EXPIRED'].includes(inv.status)).length;
 
   const levelColorMap: Record<string, { bg: string; text: string; border: string }> = {
-    UNAWARE: { bg: 'bg-rose-400/15', text: 'text-rose-200', border: 'border-rose-400/40' },
-    AWARE: { bg: 'bg-amber-400/15', text: 'text-amber-200', border: 'border-amber-400/40' },
-    PRACTICING: { bg: 'bg-yellow-400/15', text: 'text-yellow-200', border: 'border-yellow-400/40' },
-    PROFICIENT: { bg: 'bg-blue-400/15', text: 'text-blue-200', border: 'border-blue-400/40' },
-    LEADING: { bg: 'bg-emerald-400/15', text: 'text-emerald-200', border: 'border-emerald-400/40' },
+    UNAWARE: { bg: 'bg-rose-100', text: 'text-rose-900', border: 'border-rose-300' },
+    AWARE: { bg: 'bg-amber-100', text: 'text-amber-900', border: 'border-amber-300' },
+    PRACTICING: { bg: 'bg-yellow-100', text: 'text-yellow-900', border: 'border-yellow-300' },
+    PROFICIENT: { bg: 'bg-brand-100', text: 'text-brand-900', border: 'border-brand-300' },
+    LEADING: { bg: 'bg-emerald-100', text: 'text-emerald-900', border: 'border-emerald-300' },
   };
 
   return (
-    <div className="flex-1 bg-white/[0.03] py-8 px-4 sm:px-6 lg:px-8">
+    <div className="flex-1 bg-paper py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Workspace Top Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-300 bg-brand-400/10 px-2 py-0.5 rounded border border-brand-400/25">
-                PrismScore™ Workspace
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                PrismScore Workspace
               </span>
-              <span className="text-xs text-white/50 font-medium">
+              <span className="text-xs text-slate-500 font-medium">
                 {company.industry} • {company.sizeBand} • {company.country}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
-              {company.name} Prism™ Leadership Dashboard
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+              {company.name} leadership dashboard
             </h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {companyResult && (
-              <div className="flex items-center gap-3 bg-white/[0.04] px-4 py-2 rounded-xl border border-white/10 shadow-sm">
+              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
                 <div className="text-right">
-                  <div className="text-[10px] uppercase font-bold text-white/40">Company Score</div>
-                  <div className="text-lg font-black text-brand-300">
-                    {companyResult.totalScore} <span className="text-xs font-normal text-white/40">/ 500</span>
+                  <div className="text-[10px] uppercase font-bold text-slate-500">Company Score</div>
+                  <div className="text-lg font-extrabold text-brand-600">
+                    {companyResult.totalScore} <span className="text-xs font-normal text-slate-500">/ 500</span>
                   </div>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-400/10 text-blue-300 border border-blue-400/25">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 border border-brand-200">
                   {companyResult.band}
                 </span>
               </div>
@@ -194,34 +202,34 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setNewInviteModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              Invite Executive
+              Invite an executive
             </button>
 
             <Link
-              href="/dashboard/three-sixty"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-purple-300 bg-purple-400/10 hover:bg-purple-400/15 border border-purple-400/25 transition-colors"
+              href={withCompany('/dashboard/three-sixty', company.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition-colors"
             >
               <Users className="w-4 h-4" />
-              360 Staff View
+              360 staff view
             </Link>
 
             <Link
-              href="/dashboard/curriculum"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/15 border border-emerald-400/25 transition-colors"
+              href={withCompany('/dashboard/curriculum', company.id)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
             >
               <BookOpen className="w-4 h-4" />
-              Tailored Courses
+              Learning plan
             </Link>
           </div>
         </div>
 
-        {company.id === 'demo-company-vanguard' && (
-          <div className="p-4 rounded-xl bg-amber-400/10 border border-amber-400/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200">
+        {company.id === DEMO_COMPANY_ID && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">
             <div className="flex items-center gap-2">
-              <span className="font-bold px-2 py-0.5 rounded bg-amber-400/25 text-amber-100 uppercase tracking-wider text-[10px]">
+              <span className="font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-950 uppercase tracking-wider text-[10px]">
                 Sample Demo Workspace
               </span>
               <span>Viewing pre-seeded demonstration data for Vanguard Systems, Inc.</span>
@@ -230,7 +238,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => fetchDashboard(localStorage.getItem('activeCompanyId') || '')}
-                className="font-bold underline text-amber-200 hover:text-amber-100 self-start sm:self-auto"
+                className="font-bold underline text-amber-900 hover:text-amber-950 self-start sm:self-auto"
               >
                 Switch to My Company ({localStorage.getItem('activeCompanyName') || 'My Company'})
               </button>
@@ -239,36 +247,36 @@ export default function DashboardPage() {
         )}
 
         {actionMessage && (
-          <div className="p-3 rounded-xl bg-emerald-400/10 border border-emerald-400/25 text-emerald-200 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>{actionMessage}</span>
           </div>
         )}
 
         {/* C-Level Invitee Status Table */}
-        <div className="bg-white/[0.04] rounded-2xl border border-white/10 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-brand-300" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-4 h-4 text-brand-600" />
                 C-Level Leadership Invitee Roster
               </h2>
-              <p className="text-xs text-white/50 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Tracks invitation delivery, start progress, and diagnostic completion.
               </p>
             </div>
 
-            <div className="text-xs text-white/65 font-semibold flex items-center gap-2 bg-white/[0.03] px-3 py-1.5 rounded-lg border border-white/10">
+            <div className="text-xs text-slate-600 font-semibold flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
               <span>Diagnostic Completions:</span>
-              <span className="font-bold text-brand-300">{completedCount}</span>
-              <span className="text-white/40">/</span>
-              <span>{Math.max(completedCount, invitations.length)} executives</span>
+              <span className="font-bold text-brand-600">{completedCount}</span>
+              <span className="text-slate-500">/</span>
+              <span>{Math.max(completedCount, rosterTotal)} executives</span>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-white/[0.03] text-white/75 font-bold border-b border-white/10">
+              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-5">Executive</th>
                   <th className="py-3 px-5">Role</th>
@@ -277,28 +285,28 @@ export default function DashboardPage() {
                   <th className="py-3 px-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.06]">
+              <tbody className="divide-y divide-slate-100">
                 {/* Seeded and invited executives */}
                 {company.users
                   .filter((u: any) => u.role === 'EXECUTIVE' || (u.role === 'ADMIN' && u.alsoTakesClevel))
                   .map((exec: any) => {
                     const isDone = exec.submissions.some((s: any) => s.status === 'COMPLETED');
                     return (
-                      <tr key={exec.id} className="hover:bg-white/[0.06]">
-                        <td className="py-3.5 px-5 font-bold text-white">{exec.name}</td>
+                      <tr key={exec.id} className="hover:bg-slate-50/50">
+                        <td className="py-3.5 px-5 font-bold text-slate-900">{exec.name}</td>
                         <td className="py-3.5 px-5">
-                          <span className="px-2 py-0.5 rounded bg-white/[0.06] text-white/75 font-semibold">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
                             {exec.execRoleTitle || 'Executive'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-5 text-white/50">{exec.email}</td>
+                        <td className="py-3.5 px-5 text-slate-500">{exec.email}</td>
                         <td className="py-3.5 px-5">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-emerald-200 bg-emerald-400/10 border border-emerald-400/25">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             Completed
                           </span>
                         </td>
-                        <td className="py-3.5 px-5 text-right text-white/40">
+                        <td className="py-3.5 px-5 text-right text-slate-500">
                           Profile Synced
                         </td>
                       </tr>
@@ -307,26 +315,26 @@ export default function DashboardPage() {
 
                 {/* Pending / Sent invitations */}
                 {invitations
-                  .filter((inv: any) => inv.status !== 'ACCEPTED')
+                  .filter((inv: any) => !['ACCEPTED', 'EXPIRED'].includes(inv.status))
                   .map((inv: any) => (
-                    <tr key={inv.id} className="hover:bg-white/[0.06]">
-                      <td className="py-3.5 px-5 font-medium text-white/90">{inv.name || 'Invited Leader'}</td>
+                    <tr key={inv.id} className="hover:bg-slate-50/50">
+                      <td className="py-3.5 px-5 font-medium text-slate-800">{inv.name || 'Invited Leader'}</td>
                       <td className="py-3.5 px-5">
-                        <span className="px-2 py-0.5 rounded bg-purple-400/10 text-purple-300 border border-purple-400/25 font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200 font-semibold">
                           {inv.execRole || 'Executive'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-5 text-white/50">{inv.email}</td>
+                      <td className="py-3.5 px-5 text-slate-500">{inv.email}</td>
                       <td className="py-3.5 px-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-amber-200 bg-amber-400/10 border border-amber-400/25">
-                          <Mail className="w-3.5 h-3.5 text-amber-300" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold text-amber-800 bg-amber-50 border border-amber-200">
+                          <Mail className="w-3.5 h-3.5 text-amber-600" />
                           {inv.status === 'SENT' ? 'Invitation Sent (Pending)' : inv.status}
                         </span>
                       </td>
                       <td className="py-3.5 px-5 text-right space-x-2">
                         <Link
                           href={`/assessment/clevel/${inv.token}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-brand-400/10 text-brand-300 hover:bg-brand-400/15 border border-brand-400/25 font-semibold transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-brand-50 text-brand-700 hover:bg-brand-100 border border-brand-200 font-semibold transition-colors"
                           title="Open direct assessment link for this executive"
                         >
                           <ExternalLink className="w-3 h-3" />
@@ -334,13 +342,13 @@ export default function DashboardPage() {
                         </Link>
                         <button
                           onClick={() => handleRemind(inv.id, inv.email)}
-                          className="px-2.5 py-1 rounded text-white/65 hover:bg-white/10 border border-white/10 font-semibold transition-colors"
+                          className="px-2.5 py-1 rounded text-slate-600 hover:bg-slate-100 border border-slate-200 font-semibold transition-colors"
                         >
                           Remind
                         </button>
                         <button
                           onClick={() => handleRevoke(inv.id)}
-                          className="px-2.5 py-1 rounded text-rose-300 hover:bg-rose-400/10 border border-rose-400/25 font-semibold transition-colors"
+                          className="px-2.5 py-1 rounded text-rose-600 hover:bg-rose-50 border border-rose-200 font-semibold transition-colors"
                         >
                           Revoke
                         </button>
@@ -353,48 +361,49 @@ export default function DashboardPage() {
         </div>
 
         {/* MINIMUM COMPLETION RULE BANNER & SIMULATOR CONTROLS */}
-        <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                 isUnlocked
-                  ? 'bg-emerald-400/10 text-emerald-300 border border-emerald-400/25'
-                  : 'bg-amber-400/10 text-amber-300 border border-amber-400/25'
+                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                  : 'bg-amber-50 text-amber-600 border border-amber-200'
               }`}
             >
               {isUnlocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-white/75">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Privacy Threshold Status:
                 </span>
                 <span
                   className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                     isUnlocked
-                      ? 'bg-emerald-400/15 text-emerald-200'
-                      : 'bg-amber-400/15 text-amber-200'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {isUnlocked ? 'Unlocked (Threshold Satisfied)' : 'Locked (Below Minimum)'}
                 </span>
               </div>
-              <p className="text-xs text-white/50 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Rule: Heatmaps unlock only when at least <strong>{effectiveThreshold}</strong> executives have completed their confidential diagnostic. Currently: <strong>{completedCount}</strong> completed.
               </p>
             </div>
           </div>
 
-          {/* Reviewer Simulation Toggle */}
-          <div className="flex items-center gap-2 bg-white/[0.03] p-2 rounded-xl border border-white/10 text-xs">
-            <Sliders className="w-3.5 h-3.5 text-white/50" />
-            <span className="text-white/65 font-medium">Test Rule:</span>
+          {/* Reviewer Simulation Toggle (development only) */}
+          {SHOW_DEV_TOOLS && (
+          <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs">
+            <Sliders className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-600 font-medium">Test Rule:</span>
             <button
               onClick={() => setForceThreshold(3)}
               className={`px-2.5 py-1 rounded font-bold transition-colors ${
                 effectiveThreshold === 3
                   ? 'bg-brand-600 text-white'
-                  : 'bg-white/[0.04] text-white/75 border border-white/10 hover:bg-white/10'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Unlocked (≥3)
@@ -404,28 +413,29 @@ export default function DashboardPage() {
               className={`px-2.5 py-1 rounded font-bold transition-colors ${
                 effectiveThreshold === 5
                   ? 'bg-brand-600 text-white'
-                  : 'bg-white/[0.04] text-white/75 border border-white/10 hover:bg-white/10'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Locked (Simulate &lt;5)
             </button>
           </div>
+          )}
         </div>
 
         {/* LOCKED STATE BANNER */}
         {!isUnlocked && (
-          <div className="bg-ink-700 text-white rounded-3xl p-10 text-center shadow-lg border border-white/10 space-y-4">
+          <div className="bg-slate-900 text-white rounded-3xl p-10 text-center shadow-lg border border-slate-800 space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/30">
               <Lock className="w-7 h-7" />
             </div>
             <h3 className="text-xl font-bold text-white">
-              C-Level Heatmaps Locked for Anonymity Protection
+              C-level heatmaps are locked to protect anonymity
             </h3>
-            <p className="text-sm text-white/60 max-w-lg mx-auto leading-relaxed">
+            <p className="text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
               To safeguard psychological safety and prevent identifying individual leader feedback, team heatmaps require at least {effectiveThreshold} completed executive assessments.
             </p>
-            <div className="inline-block bg-white/[0.04] text-white/60 text-xs px-4 py-2 rounded-xl border border-white/10">
-              Currently {completedCount} of {effectiveThreshold} completed. Send reminders above or use the toggle to test.
+            <div className="inline-block bg-slate-800 text-slate-300 text-xs px-4 py-2 rounded-xl border border-slate-700">
+              Currently {completedCount} of {effectiveThreshold} completed. Send reminders above to invite the rest of your team.
             </div>
           </div>
         )}
@@ -434,27 +444,27 @@ export default function DashboardPage() {
         {isUnlocked && (
           <div className="space-y-8">
             {/* ALIGNMENT HEATMAP */}
-            <div className="bg-white/[0.04] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-white/[0.06] gap-2">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-100 gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-brand-300" />
-                    <h2 className="text-lg font-bold text-white">
-                      C-Level Competency Alignment Heatmap
+                    <BarChart3 className="w-5 h-5 text-brand-600" />
+                    <h2 className="text-lg font-bold text-slate-900">
+                      C-level competency alignment heatmap
                     </h2>
                   </div>
-                  <p className="text-xs text-white/50 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Knowledge level distribution by executive role across 6 core AI domains.
                   </p>
                 </div>
 
                 {/* Legend */}
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-                  <span className="px-2 py-0.5 rounded bg-rose-400/15 text-rose-200 border border-rose-400/40">Unaware</span>
-                  <span className="px-2 py-0.5 rounded bg-amber-400/15 text-amber-200 border border-amber-400/40">Aware</span>
-                  <span className="px-2 py-0.5 rounded bg-yellow-400/15 text-yellow-200 border border-yellow-400/40">Practicing</span>
-                  <span className="px-2 py-0.5 rounded bg-blue-400/15 text-blue-200 border border-blue-400/40">Proficient</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-400/15 text-emerald-200 border border-emerald-400/40">Leading</span>
+                  <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-900 border border-rose-300">Unaware</span>
+                  <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Aware</span>
+                  <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">Practicing</span>
+                  <span className="px-2 py-0.5 rounded bg-brand-100 text-brand-900 border border-brand-300">Proficient</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">Leading</span>
                 </div>
               </div>
 
@@ -462,23 +472,23 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="py-3 px-4 text-left text-xs font-bold text-white/75 w-44">
+                    <tr className="border-b border-slate-200">
+                      <th className="py-3 px-4 text-left text-xs font-bold text-slate-700 w-44">
                         Executive Leader
                       </th>
                       {domains.map((dom: string) => (
-                        <th key={dom} className="py-3 px-3 text-xs font-bold text-white/75">
+                        <th key={dom} className="py-3 px-3 text-xs font-bold text-slate-700">
                           {dom}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/[0.06] text-xs">
+                  <tbody className="divide-y divide-slate-100 text-xs">
                     {heatmapMatrix.map((row: any) => (
-                      <tr key={row.roleTitle} className="hover:bg-white/[0.06]">
-                        <td className="py-4 px-4 text-left font-bold text-white">
+                      <tr key={row.roleTitle} className="hover:bg-slate-50/50">
+                        <td className="py-4 px-4 text-left font-bold text-slate-900">
                           <div>{row.executiveName}</div>
-                          <div className="text-[11px] font-normal text-white/40">{row.roleTitle}</div>
+                          <div className="text-[11px] font-normal text-slate-500">{row.roleTitle}</div>
                         </td>
                         {domains.map((dom: string) => {
                           const level = row.competencies[dom] || 'PRACTICING';
@@ -501,16 +511,16 @@ export default function DashboardPage() {
             </div>
 
             {/* RESISTANCE MAP & NON-COURSE INTERVENTIONS */}
-            <div className="bg-white/[0.04] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-sm">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/[0.06]">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
                 <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-indigo-300" />
+                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-brand-600" />
                     Leadership Resistance Map & Tailored Interventions
                   </h2>
-                  <p className="text-xs text-white/50 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Conditions and concerns identified across the team. 
-                    <span className="text-white/75 font-medium"> Note: Resistance does not map to course modules; it maps to leadership interventions.</span>
+                    <span className="text-slate-700 font-medium"> Note: Resistance does not map to course modules; it maps to leadership interventions.</span>
                   </p>
                 </div>
               </div>
@@ -519,21 +529,21 @@ export default function DashboardPage() {
                 {resistanceMap.map((item: any) => (
                   <div
                     key={item.key}
-                    className="p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-indigo-400/25 transition-all space-y-2"
+                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-brand-200 transition-all space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-white">{item.label}</span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-400/10 text-indigo-300 border border-indigo-400/25">
+                      <span className="font-bold text-sm text-slate-900">{item.label}</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">
                         {item.count} {item.count === 1 ? 'executive concern' : 'executive concerns'}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-white/[0.04] border border-white/10 text-xs space-y-1">
-                      <div className="font-bold text-indigo-300 flex items-center gap-1.5">
+                    <div className="p-3 rounded-lg bg-white border border-slate-200 text-xs space-y-1">
+                      <div className="font-bold text-brand-700 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" />
                         Recommended Intervention: {item.intervention?.title}
                       </div>
-                      <p className="text-white/65">
+                      <p className="text-slate-600">
                         {item.intervention?.description}
                       </p>
                     </div>
@@ -543,43 +553,43 @@ export default function DashboardPage() {
             </div>
 
             {/* AWARENESS ACCURACY (PERCEPTION VS REALITY) */}
-            <div className="bg-white/[0.04] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-sm">
-              <div className="pb-4 mb-4 border-b border-white/[0.06]">
-                <h2 className="text-lg font-bold text-white">
-                  Awareness Accuracy Summary (Perception vs Reality)
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+              <div className="pb-4 mb-4 border-b border-slate-100">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Awareness accuracy (perception vs reality)
                 </h2>
-                <p className="text-xs text-white/50 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Compares executive perceptions with company assessment baselines and staff 360 findings.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                  <span className="text-white/50 font-semibold uppercase block mb-1">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-semibold uppercase block mb-1">
                     Frontline Tool Adoption
                   </span>
-                  <div className="font-bold text-white text-sm">{awarenessAccuracy.toolUsagePerception}</div>
-                  <div className="text-amber-300 mt-2 font-medium bg-amber-400/10 p-2 rounded border border-amber-400/25">
+                  <div className="font-bold text-slate-900 text-sm">{awarenessAccuracy.toolUsagePerception}</div>
+                  <div className="text-amber-700 mt-2 font-medium bg-amber-50 p-2 rounded border border-amber-200">
                     {awarenessAccuracy.groundTruthDifference}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                  <span className="text-white/50 font-semibold uppercase block mb-1">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-semibold uppercase block mb-1">
                     Confidentiality Compliance
                   </span>
-                  <div className="font-bold text-white text-sm">{awarenessAccuracy.policyPerception}</div>
-                  <div className="text-rose-300 mt-2 font-medium bg-rose-400/10 p-2 rounded border border-rose-400/25">
+                  <div className="font-bold text-slate-900 text-sm">{awarenessAccuracy.policyPerception}</div>
+                  <div className="text-rose-700 mt-2 font-medium bg-rose-50 p-2 rounded border border-rose-200">
                     {awarenessAccuracy.policyReality}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                  <span className="text-white/50 font-semibold uppercase block mb-1">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 font-semibold uppercase block mb-1">
                     Overall Team Cohesion
                   </span>
-                  <div className="font-bold text-white text-sm">{awarenessAccuracy.alignmentStatus}</div>
-                  <p className="text-white/65 mt-2">
+                  <div className="font-bold text-slate-900 text-sm">{awarenessAccuracy.alignmentStatus}</div>
+                  <p className="text-slate-600 mt-2">
                     Staff report higher informal AI use but lack written guardrails, creating hidden compliance exposure.
                   </p>
                 </div>
@@ -587,13 +597,13 @@ export default function DashboardPage() {
             </div>
 
             {/* INDIVIDUAL EXECUTIVE GAP PROFILES */}
-            <div className="bg-white/[0.04] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-sm">
-              <div className="pb-4 mb-6 border-b border-white/[0.06]">
-                <h2 className="text-lg font-bold text-white">
-                  Individual Executive Gap Profiles (Target Level – Current Level)
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+              <div className="pb-4 mb-6 border-b border-slate-100">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Individual executive gap profiles (target vs current level)
                 </h2>
-                <p className="text-xs text-white/50 mt-0.5">
-                  Visible to executive and company admin per confidentiality rules. Drives Phase 4 Course Plan.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Visible only to each executive and the company admin. Feeds your leadership learning plan.
                 </p>
               </div>
 
@@ -601,36 +611,36 @@ export default function DashboardPage() {
                 {executiveGaps.map((exec: any) => (
                   <div
                     key={exec.id}
-                    className="p-5 rounded-2xl border border-white/10 bg-white/[0.03] space-y-4"
+                    className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4"
                   >
                     <div>
-                      <span className="text-xs font-bold uppercase text-brand-300 px-2 py-0.5 rounded bg-brand-400/10 border border-brand-400/25">
+                      <span className="text-xs font-bold uppercase text-brand-600 px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
                         {exec.roleTitle}
                       </span>
-                      <h3 className="font-bold text-white text-base mt-1.5">{exec.name}</h3>
-                      <p className="text-xs text-white/40">{exec.email}</p>
+                      <h3 className="font-bold text-slate-900 text-base mt-1.5">{exec.name}</h3>
+                      <p className="text-xs text-slate-500">{exec.email}</p>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-white/10">
-                      <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider block">
+                    <div className="space-y-2 pt-2 border-t border-slate-200">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         Top Competency Gaps:
                       </span>
                       {exec.gaps.map((g: any, i: number) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between text-xs p-2 rounded-lg bg-white/[0.04] border border-white/10"
+                          className="flex items-center justify-between text-xs p-2 rounded-lg bg-white border border-slate-200"
                         >
                           <div>
-                            <div className="font-semibold text-white/90">{g.competency}</div>
-                            <div className="text-[10px] text-white/40">
+                            <div className="font-semibold text-slate-800">{g.competency}</div>
+                            <div className="text-[10px] text-slate-500">
                               {g.current} → {g.target}
                             </div>
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               g.priority === 'HIGH'
-                                ? 'bg-rose-400/15 text-rose-200'
-                                : 'bg-amber-400/15 text-amber-200'
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
                             }`}
                           >
                             Gap +{g.gap}
@@ -639,15 +649,15 @@ export default function DashboardPage() {
                       ))}
                     </div>
 
-                    <div className="pt-2 border-t border-white/10">
-                      <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider block mb-1">
+                    <div className="pt-2 border-t border-slate-200">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
                         Concern Profile:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {exec.concerns.map((c: string, ci: number) => (
                           <span
                             key={ci}
-                            className="text-[10px] font-medium px-2 py-0.5 rounded bg-white/10 text-white/75"
+                            className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-slate-700"
                           >
                             {c}
                           </span>
@@ -662,53 +672,59 @@ export default function DashboardPage() {
         )}
 
         {/* INVITE NEW EXECUTIVE MODAL */}
-        {newInviteModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-ink-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/10">
-              <h3 className="text-xl font-bold text-white mb-1">
-                Invite C-Level Leader
+        <Dialog
+          open={newInviteModal}
+          onClose={() => setNewInviteModal(false)}
+          labelledBy="invite-dialog-title"
+          panelClassName="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200"
+        >
+              <h3 id="invite-dialog-title" className="text-xl font-bold text-slate-900 mb-1">
+                Invite a C-level leader
               </h3>
-              <p className="text-xs text-white/50 mb-6">
+              <p className="text-xs text-slate-500 mb-6">
                 Send a confidential invitation to join {company.name}'s workspace.
               </p>
 
               <form onSubmit={handleSendInvite} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-white/75 uppercase mb-1">
-                    Leader Name
+                  <label htmlFor="invite-name" className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Leader name
                   </label>
                   <input
+                    id="invite-name"
                     type="text"
                     required
                     placeholder="e.g. Jordan Hayes"
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-white/75 uppercase mb-1">
-                    Work Email
+                  <label htmlFor="invite-email" className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Work email
                   </label>
                   <input
+                    id="invite-email"
                     type="email"
                     required
                     placeholder="jordan@company.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-white/75 uppercase mb-1">
-                    Executive Role Title
+                  <label htmlFor="invite-role" className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Executive role
                   </label>
                   <select
+                    id="invite-role"
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="CTO">Chief Technology Officer (CTO)</option>
                     <option value="CFO">Chief Financial Officer (CFO)</option>
@@ -724,21 +740,19 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setNewInviteModal(false)}
-                    className="w-1/2 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-white/65 hover:bg-white/[0.06]"
+                    className="w-1/2 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="w-1/2 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-md shadow-brand-600/20"
+                    className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 text-white text-xs font-bold shadow-md shadow-brand-600/20"
                   >
-                    Send Invitation
+                    Send invitation
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+        </Dialog>
       </div>
     </div>
   );

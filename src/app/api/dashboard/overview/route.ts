@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { CONCERN_TYPES, CONCERN_INTERVENTIONS, ConcernKey } from '@/lib/scoring';
+import { DEMO_COMPANY_ID } from '@/lib/product';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,35 +10,17 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     let companyId = searchParams.get('companyId');
 
-    // 1. If companyId not specified, find the most recently created real company
-    if (!companyId) {
-      const latestCompany = await prisma.company.findFirst({
-        where: {
-          id: { not: 'demo-company-vanguard' },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (latestCompany) {
-        companyId = latestCompany.id;
-      }
-    }
-
-    // 2. Fall back to demo company only if no real company exists
+    // Without an explicit companyId, only ever show the seeded demo company.
+    // Never fall back to a real company: that would expose another customer's
+    // executives, emails and scores to anonymous visitors.
     if (!companyId) {
       const demoCompany = await prisma.company.findFirst({
-        where: { id: 'demo-company-vanguard' },
+        where: { id: DEMO_COMPANY_ID },
       });
-      companyId = demoCompany?.id || '';
-    }
-
-    if (!companyId) {
-      const anyCompany = await prisma.company.findFirst({
-        orderBy: { createdAt: 'desc' },
-      });
-      if (!anyCompany) {
+      if (!demoCompany) {
         return NextResponse.json({ error: 'No company found' }, { status: 404 });
       }
-      companyId = anyCompany.id;
+      companyId = demoCompany.id;
     }
 
     // 1. Fetch Company details
@@ -227,9 +210,10 @@ export async function GET(request: Request) {
       minThreshold,
       heatmapsUnlocked,
       domains,
-      heatmapMatrix,
-      resistanceMap,
-      awarenessAccuracy,
+      // Team aggregates stay hidden until enough executives have completed (anonymity rule)
+      heatmapMatrix: heatmapsUnlocked ? heatmapMatrix : [],
+      resistanceMap: heatmapsUnlocked ? resistanceMap : [],
+      awarenessAccuracy: heatmapsUnlocked ? awarenessAccuracy : null,
       executiveGaps,
     });
   } catch (error: any) {

@@ -27,44 +27,10 @@ export async function GET(
       },
     });
 
-    // Fallback 1: Most recently completed submission in this container
-    if (!submission) {
-      submission = await prisma.submission.findFirst({
-        where: { assessmentTypeId: 'COMPANY', status: 'COMPLETED' },
-        orderBy: { completedAt: 'desc' },
-        include: {
-          company: true,
-          user: true,
-          result: true,
-          responses: {
-            include: {
-              question: true,
-              option: true,
-            },
-          },
-        },
-      });
-    }
+    // Never substitute another company's submission for an unknown id: that
+    // would show one customer's report to someone else.
 
-    // Fallback 2: Any submission with result in this container
-    if (!submission) {
-      submission = await prisma.submission.findFirst({
-        where: { result: { isNot: null } },
-        include: {
-          company: true,
-          user: true,
-          result: true,
-          responses: {
-            include: {
-              question: true,
-              option: true,
-            },
-          },
-        },
-      });
-    }
-
-    // Fallback 3: Reconstruct valid report on-the-fly so serverless container switches never return 404
+    // Fallback: Reconstruct valid report on-the-fly so serverless container switches never return 404
     if (!submission || !submission.result) {
       const defaultPoints: Record<DimensionKey, number> = {
         STRATEGY: 11,

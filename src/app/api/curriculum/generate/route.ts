@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { DEMO_COMPANY_ID } from '@/lib/product';
 import { CONCERN_INTERVENTIONS, ConcernKey } from '@/lib/scoring';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
 
     if (!companyId) {
       const demoCompany = await prisma.company.findFirst({
-        where: { id: 'demo-company-vanguard' },
+        where: { id: DEMO_COMPANY_ID },
       });
       companyId = demoCompany?.id || '';
     }
