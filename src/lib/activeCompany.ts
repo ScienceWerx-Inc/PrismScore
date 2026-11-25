@@ -1,15 +1,11 @@
 /**
- * The company whose data a dashboard page should show: an explicit ?companyId=
- * in the URL, otherwise the company this browser onboarded. Empty means "none",
- * and the APIs then show only the seeded demo company.
+ * The company a dashboard page asks the API for. Signed-in users always get
+ * their own company from the server; the only id a page passes on is the one in
+ * the URL, which the server honours just for the public demo workspace.
  */
 export function getActiveCompanyId(): string {
   if (typeof window === 'undefined') return '';
-  return (
-    new URLSearchParams(window.location.search).get('companyId') ||
-    localStorage.getItem('activeCompanyId') ||
-    ''
-  );
+  return new URLSearchParams(window.location.search).get('companyId') || '';
 }
 
 /** Appends ?companyId= to an API or page path when there is one. */

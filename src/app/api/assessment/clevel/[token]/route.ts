@@ -1,53 +1,39 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleAuthError } from '@/lib/auth/server';
+import { clevelQuestionFilter, usableExecutiveInvite } from '@/lib/auth/clevel';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_request: Request, { params }: { params: { token: string } }) {
   try {
-    const { token } = params;
+    const invitation = await usableExecutiveInvite(params.token);
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { token },
-      include: {
-        company: true,
-      },
-    });
-
-    if (!invitation) {
-      return NextResponse.json({ error: 'Invalid or expired invitation token.' }, { status: 404 });
-    }
-
-    // Role filter: fetch ALL questions + role-specific questions matching their execRole
-    const execRole = invitation.execRole || 'OTHER';
-
-    const questions = await prisma.question.findMany({
-      where: {
-        assessmentTypeId: 'CLEVEL',
-        OR: [
-          { roleFilter: 'ALL' },
-          { roleFilter: execRole },
-        ],
-      },
-      orderBy: { order: 'asc' },
-      include: {
-        dimension: true,
-        options: {
-          orderBy: { order: 'asc' },
+    const [questions, account] = await Promise.all([
+      prisma.question.findMany({
+        where: clevelQuestionFilter(invitation.execRole),
+        orderBy: { order: 'asc' },
+        include: {
+          dimension: { select: { id: true, name: true, domain: true } },
+          // Levels and concern types are how answers are scored; keep them server-side.
+          options: { orderBy: { order: 'asc' }, select: { id: true, text: true, order: true } },
         },
-      },
-    });
+      }),
+      prisma.user.findUnique({ where: { email: invitation.email }, select: { id: true } }),
+    ]);
 
     return NextResponse.json({
-      invitation,
+      invitation: {
+        name: invitation.name,
+        email: invitation.email,
+        execRole: invitation.execRole,
+        invitedBy: invitation.invitedBy,
+        company: { name: invitation.company.name },
+      },
+      hasAccount: Boolean(account),
       questions,
     });
-  } catch (error: any) {
-    console.error('Error fetching C-level assessment:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, 'C-level assessment load error');
   }
 }
-

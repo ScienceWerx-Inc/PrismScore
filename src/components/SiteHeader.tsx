@@ -48,6 +48,25 @@ export default function SiteHeader() {
   }, [overHero]);
   const transparent = overHero && !scrolled;
 
+  // Who is signed in (null while loading or signed out). Re-checked on navigation.
+  const [me, setMe] = useState<{ name: string; role: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : { user: null }))
+      .then((d) => !cancelled && setMe(d.user))
+      .catch(() => !cancelled && setMe(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const signOut = async () => {
+    await fetch('/api/auth/sign-out', { method: 'POST' }).catch(() => {});
+    setMe(null);
+    window.location.assign('/');
+  };
+
   return (
     <header
       className={`sticky top-0 z-50 border-b transition-[background-color,border-color,backdrop-filter] duration-300 no-print ${
@@ -77,6 +96,30 @@ export default function SiteHeader() {
             </nav>
 
             <div className="flex items-center gap-4 shrink-0">
+              {me ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className={`hidden sm:inline rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className={`rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className={`rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}
+                >
+                  Sign in
+                </Link>
+              )}
               <Link
                 href={ROUTES.sampleReport}
                 className={`hidden sm:inline rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}

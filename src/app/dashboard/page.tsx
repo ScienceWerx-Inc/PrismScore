@@ -27,6 +27,7 @@ import {
   Sparkles,
   ExternalLink,
 } from 'lucide-react';
+import { redirectIfSignedOut, signInHref } from '@/lib/clientAuth';
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -42,12 +43,11 @@ export default function DashboardPage() {
 
   const fetchDashboard = async (targetCompanyId?: string) => {
     try {
+      // Signed in, the server always answers with the user's own company. Only the
+      // public demo can be asked for by id (the "sample dashboard" link).
       let activeId = targetCompanyId;
       if (!activeId && typeof window !== 'undefined') {
-        activeId =
-          new URLSearchParams(window.location.search).get('companyId') ||
-          localStorage.getItem('activeCompanyId') ||
-          '';
+        activeId = new URLSearchParams(window.location.search).get('companyId') || '';
       }
 
       const url = activeId
@@ -55,6 +55,7 @@ export default function DashboardPage() {
         : '/api/dashboard/overview';
 
       const res = await fetch(url);
+      if (redirectIfSignedOut(res)) return;
       const json = await res.json();
       setData(json);
     } catch (e) {
@@ -71,6 +72,10 @@ export default function DashboardPage() {
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !data?.company?.id) return;
+    if (data.company.id === DEMO_COMPANY_ID) {
+      alert('The sample workspace is read-only. Sign in to invite your own leadership team.');
+      return;
+    }
 
     try {
       const res = await fetch('/api/invitations', {
@@ -78,13 +83,14 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_or_send',
-          companyId: data.company.id,
           name: inviteName,
           email: inviteEmail,
           execRole: inviteRole,
         }),
       });
+      if (redirectIfSignedOut(res)) return;
       const resData = await res.json();
+      if (!resData.success) throw new Error(resData.error);
       if (resData.success) {
         setActionMessage(`Invitation sent to ${inviteEmail}`);
         setNewInviteModal(false);
@@ -93,8 +99,8 @@ export default function DashboardPage() {
         fetchDashboard(data?.company?.id);
         setTimeout(() => setActionMessage(null), 3000);
       }
-    } catch (e) {
-      alert('Failed to send invitation');
+    } catch (e: any) {
+      alert(e?.message || 'Failed to send invitation');
     }
   };
 
@@ -141,7 +147,7 @@ export default function DashboardPage() {
   if (!data || !data.company) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-slate-700 font-bold mb-4">No company workspace found.</p>
+        <p className="text-slate-700 font-bold mb-4">{data?.error || 'No company workspace found.'}</p>
         <Link href="/onboarding" className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-bold">
           Create Company Workspace
         </Link>
@@ -234,15 +240,12 @@ export default function DashboardPage() {
               </span>
               <span>Viewing pre-seeded demonstration data for Vanguard Systems, Inc.</span>
             </div>
-            {typeof window !== 'undefined' && localStorage.getItem('activeCompanyId') && (
-              <button
-                type="button"
-                onClick={() => fetchDashboard(localStorage.getItem('activeCompanyId') || '')}
-                className="font-bold underline text-amber-900 hover:text-amber-950 self-start sm:self-auto"
-              >
-                Switch to My Company ({localStorage.getItem('activeCompanyName') || 'My Company'})
-              </button>
-            )}
+            <a
+              href={signInHref('/dashboard')}
+              className="font-bold underline text-amber-900 hover:text-amber-950 self-start sm:self-auto"
+            >
+              Go to my company&apos;s dashboard
+            </a>
           </div>
         )}
 

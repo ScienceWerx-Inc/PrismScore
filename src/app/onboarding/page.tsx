@@ -3,6 +3,7 @@
 import { ASSESSMENT } from '@/lib/product';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Building2,
   Users,
@@ -49,6 +50,7 @@ export default function OnboardingPage() {
   // Admin details
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [adminRole, setAdminRole] = useState('CEO');
   const [alsoTakesClevel, setAlsoTakesClevel] = useState(true);
 
@@ -100,6 +102,11 @@ export default function OnboardingPage() {
       return;
     }
 
+    if (password.length < 10) {
+      setError('Choose a password of at least 10 characters.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -117,6 +124,7 @@ export default function OnboardingPage() {
           country,
           adminName,
           adminEmail,
+          password,
           adminRole,
           alsoTakesClevel,
           executives: filteredExecs,
@@ -128,12 +136,7 @@ export default function OnboardingPage() {
         throw new Error(data.error || 'Failed to complete setup.');
       }
 
-      // Save active session in local storage for navigation
-      localStorage.setItem('activeCompanyId', data.companyId);
-      localStorage.setItem('activeCompanyName', companyName);
-      localStorage.setItem('activeUserId', data.userId);
-      localStorage.setItem('activeSubmissionId', data.submissionId);
-
+      // The response set the session cookie; the server knows the company from it.
       // Redirect directly to company assessment
       router.push(`/assessment/company?submissionId=${data.submissionId}`);
     } catch (err: any) {
@@ -237,6 +240,26 @@ export default function OnboardingPage() {
                 />
                 <span id="ob-email-hint" className="text-[11px] text-slate-500 mt-1 block">
                   Used only to save your results and give you access to your score.
+                </span>
+              </div>
+              <div>
+                <label htmlFor="ob-password" className={LABEL}>
+                  Password *
+                </label>
+                <input
+                  id="ob-password"
+                  type="password"
+                  required
+                  minLength={10}
+                  autoComplete="new-password"
+                  aria-describedby="ob-password-hint"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={FIELD}
+                />
+                <span id="ob-password-hint" className="text-[11px] text-slate-500 mt-1 block">
+                  At least 10 characters. You will use it to come back to your results.{' '}
+                  <Link href="/sign-in" className="text-brand-700 underline">Already have an account?</Link>
                 </span>
               </div>
             </div>

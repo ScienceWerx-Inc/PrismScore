@@ -350,6 +350,11 @@ async function main() {
       },
     });
 
+    // Gap and concern rows have no natural key, so replace them on every run
+    // to keep the seed idempotent (it runs on each deploy).
+    await prisma.gapRecord.deleteMany({ where: { userId: user.id } });
+    await prisma.concernProfile.deleteMany({ where: { userId: user.id } });
+
     // Create completed submission
     await prisma.submission.upsert({
       where: { id: `demo-sub-${exec.id}` },

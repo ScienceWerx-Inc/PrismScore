@@ -2,6 +2,7 @@
 
 import { CTA, ROUTES } from '@/lib/product';
 import { getActiveCompanyId, withCompany } from '@/lib/activeCompany';
+import { redirectIfSignedOut } from '@/lib/clientAuth';
 import { SHOW_DEV_TOOLS } from '@/lib/flags';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -33,6 +34,7 @@ export default function CurriculumPage() {
     async function loadCurriculum() {
       try {
         const res = await fetch(withCompany('/api/curriculum/generate', getActiveCompanyId()));
+        if (redirectIfSignedOut(res)) return;
         const json = await res.json();
         setData(json);
       } catch (e) {

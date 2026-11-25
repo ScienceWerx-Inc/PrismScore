@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { companyAccess, handleAuthError } from '@/lib/auth/server';
+import { ASSESSMENT } from '@/lib/product';
 
 export async function POST(request: Request) {
   try {
-    const { companyId, amount = 149 } = await request.json();
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId is required' }, { status: 400 });
-    }
+    // Payments are still simulated. Only the company's own admin can unlock it,
+    // and the price comes from the server, not the request.
+    const { companyId, user } = await companyAccess(null, { roles: ['ADMIN'] });
+    const amount = ASSESSMENT.fullReportPrice;
 
     // 1. Record simulated payment
     const payment = await prisma.payment.create({
@@ -32,17 +33,16 @@ export async function POST(request: Request) {
     // 3. Audit Log
     await prisma.auditLog.create({
       data: {
-        actor: 'Billing System',
+        actor: user!.email,
         action: 'PAYMENT_RECEIVED',
         entity: `Company:${companyId}`,
         details: `Unlocked Full Executive Report for $${amount}`,
       },
     });
 
-    return NextResponse.json({ success: true, company, payment });
-  } catch (error: any) {
-    console.error('Payment checkout error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, planStatus: company.planStatus, paymentId: payment.id });
+  } catch (error) {
+    return handleAuthError(error, 'Payment checkout error');
   }
 }
 

@@ -29,6 +29,10 @@ export default function CLevelAssessmentPage() {
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     async function fetchAssessment() {
@@ -38,6 +42,9 @@ export default function CLevelAssessmentPage() {
         if (data.invitation) {
           setInvitation(data.invitation);
           setQuestions(data.questions || []);
+          setHasAccount(Boolean(data.hasAccount));
+        } else {
+          setLoadError(data.error || null);
         }
       } catch (e) {
         console.error('Failed to load C-level assessment:', e);
@@ -81,10 +88,11 @@ export default function CLevelAssessmentPage() {
       const res = await fetch('/api/assessment/clevel/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, responses: answers }),
+        body: JSON.stringify({ token, responses: answers, ...(hasAccount ? {} : { password }) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
+      setSignedIn(Boolean(data.signedIn));
       setCompleted(true);
     } catch (err: any) {
       alert(err.message || 'Error submitting assessment');
@@ -104,7 +112,7 @@ export default function CLevelAssessmentPage() {
   if (!invitation) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-slate-700 font-semibold mb-3">Invalid or expired invitation link.</p>
+        <p className="text-slate-700 font-semibold mb-3">{loadError || 'Invalid or expired invitation link.'}</p>
         <button
           onClick={() => router.push('/')}
           className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm"
@@ -144,7 +152,11 @@ export default function CLevelAssessmentPage() {
           <div className="space-y-3">
             <p className="text-sm text-slate-600 text-center">
               Your company admin will share the team results once enough executives have finished.
-              You can close this window.
+              {signedIn
+                ? ' Your PrismScore account is ready; sign in any time with this email and your password.'
+                : hasAccount
+                  ? ' Sign in with your existing PrismScore account to come back later.'
+                  : ' You can close this window.'}
             </p>
             <button
               onClick={() => router.push('/')}
@@ -204,9 +216,30 @@ export default function CLevelAssessmentPage() {
             </div>
           </div>
 
+          {!hasAccount && (
+            <div className="mb-6">
+              <label htmlFor="cl-password" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Create a password for {invitation.email}
+              </label>
+              <input
+                id="cl-password"
+                type="password"
+                minLength={10}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white"
+              />
+              <span className="text-[11px] text-slate-500 mt-1 block">
+                At least 10 characters. It gives you access to your results and learning plan later.
+              </span>
+            </div>
+          )}
+
           <button
+            disabled={!hasAccount && password.length < 10}
             onClick={() => setStarted(true)}
-            className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 text-white text-base shadow-md shadow-brand-600/30 transition-all flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl font-bold bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 text-white text-base shadow-md shadow-brand-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Start the C-level assessment ({questions.length} scenarios)
             <ArrowRight className="w-5 h-5" />

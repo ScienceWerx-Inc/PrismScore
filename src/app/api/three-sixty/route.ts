@@ -1,25 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { DEMO_COMPANY_ID } from '@/lib/product';
-import crypto from 'crypto';
+import { companyAccess, handleAuthError, normalizeEmail } from '@/lib/auth/server';
+import { inviteExpiry, newInviteToken } from '@/lib/auth/invites';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    let companyId = searchParams.get('companyId');
-
-    if (!companyId) {
-      const demoCompany = await prisma.company.findFirst({
-        where: { id: DEMO_COMPANY_ID },
-      });
-      companyId = demoCompany?.id || '';
-    }
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
+    const { companyId } = await companyAccess(new URL(request.url).searchParams.get('companyId'), {
+      allowDemo: true,
+      roles: ['ADMIN'],
+    });
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
@@ -131,35 +122,36 @@ export async function GET(request: Request) {
       visibleDepartments,
       comparison,
     });
-  } catch (error: any) {
-    console.error('360 overview error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, '360 overview error');
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { action, companyId, invites = [] } = await request.json();
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'companyId is required' }, { status: 400 });
+    const { companyId, user } = await companyAccess(null, { roles: ['ADMIN'] });
+    const { action, invites = [] } = await request.json();
+    if (!Array.isArray(invites) || invites.length > 500) {
+      return NextResponse.json({ error: 'Send at most 500 invitations at a time.' }, { status: 400 });
     }
 
     if (action === 'bulk_invite') {
       const created = [];
       for (const inv of invites) {
-        if (inv.email) {
-          const token = crypto.randomBytes(24).toString('hex');
+        const email = normalizeEmail(inv?.email);
+        if (email) {
+          const token = newInviteToken();
           const rec = await prisma.invitation.create({
             data: {
               companyId,
               name: inv.name || 'Staff Member',
-              email: inv.email.toLowerCase().trim(),
+              email,
               role: 'STAFF',
               department: inv.department || 'General',
               token,
               status: 'SENT',
-              invitedBy: 'Company Admin',
+              invitedBy: user!.name,
+              expiresAt: inviteExpiry(),
             },
           });
           created.push(rec);
@@ -169,9 +161,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-  } catch (error: any) {
-    console.error('360 invite error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, '360 invite error');
   }
 }
 

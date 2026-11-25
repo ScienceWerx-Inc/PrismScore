@@ -4,7 +4,7 @@ import { handleRadioKeys, radioTabIndex } from '@/lib/radioKeys';
 import { SHOW_DEV_TOOLS } from '@/lib/flags';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { calculateCompanyScore, DimensionKey } from '@/lib/scoring';
+import { redirectIfSignedOut } from '@/lib/clientAuth';
 import {
   CheckCircle2,
   ArrowRight,
@@ -48,7 +48,8 @@ interface Dimension {
 function AssessmentContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const submissionId = searchParams.get('submissionId');
+  // The URL may name the assessment; otherwise the server resumes or opens one.
+  const [submissionId, setSubmissionId] = useState<string | null>(searchParams.get('submissionId'));
 
   const [loading, setLoading] = useState(true);
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
@@ -80,7 +81,15 @@ function AssessmentContent() {
         }
 
         const res = await fetch(`/api/assessment/company?submissionId=${submissionId || ''}`);
+        if (redirectIfSignedOut(res)) return;
         const data = await res.json();
+        if (data.submission?.status === 'COMPLETED') {
+          router.replace(`/report/company/${data.submission.id}`);
+          return;
+        }
+        if (data.submission?.id && data.submission.id !== submissionId) {
+          setSubmissionId(data.submission.id);
+        }
         if (data.questions) {
           setQuestions(data.questions);
           setDimensions(data.dimensions || []);
@@ -219,89 +228,20 @@ function AssessmentContent() {
 
     setSubmitting(true);
     try {
-      const companyId = localStorage.getItem('activeCompanyId') || '';
-      const companyName = localStorage.getItem('activeCompanyName') || 'Company';
-
-      // Send answers in payload to ensure resilience across serverless containers
       const res = await fetch('/api/assessment/company/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          submissionId,
-          companyId,
-          companyName,
-          answers,
-        }),
+        body: JSON.stringify({ submissionId, answers }),
       });
+      if (redirectIfSignedOut(res)) return;
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Submission failed');
 
-      // Cache completed report in localStorage for seamless client-side hydration
-      try {
-        const reportPayload = JSON.stringify({
-          submission: data.submission,
-          scoringResult: data.scoringResult,
-          company: data.company,
-        });
-        localStorage.setItem(`prism_report_${submissionId}`, reportPayload);
-        localStorage.setItem('prism_latest_report', reportPayload);
-        sessionStorage.setItem(`prism_report_${submissionId}`, reportPayload);
-      } catch {}
-
-      router.push(`/report/company/${submissionId}`);
+      router.push(`/report/company/${data.submissionId || submissionId}`);
     } catch (err: any) {
-      console.warn('Network submission note, computing client-side fallback:', err);
-      try {
-        const rawPoints: Record<DimensionKey, number> = {
-          STRATEGY: 0,
-          USE_VALUE: 0,
-          DATA_TECH: 0,
-          GOVERNANCE: 0,
-          PEOPLE: 0,
-        };
-        const builtResponses: any[] = [];
-        for (const q of questions) {
-          const selectedOptId = answers[q.id];
-          if (selectedOptId) {
-            const opt = q.options.find((o) => o.id === selectedOptId);
-            if (opt) {
-              const dimKey = q.dimensionId as DimensionKey;
-              if (rawPoints[dimKey] !== undefined) {
-                rawPoints[dimKey] += opt.points || 0;
-              }
-              builtResponses.push({
-                id: `resp_${q.id}`,
-                questionId: q.id,
-                optionId: opt.id,
-                question: { id: q.id, text: q.text, dimensionId: q.dimensionId },
-                option: { id: opt.id, text: opt.text, points: opt.points || 0 },
-              });
-            }
-          }
-        }
-        const clientScoring = calculateCompanyScore(rawPoints);
-        const reportPayload = JSON.stringify({
-          submission: {
-            id: submissionId,
-            status: 'COMPLETED',
-            completedAt: new Date().toISOString(),
-            responses: builtResponses,
-          },
-          scoringResult: clientScoring,
-          company: {
-            name: localStorage.getItem('activeCompanyName') || 'Company',
-            planStatus: 'FREE',
-          },
-        });
-        localStorage.setItem(`prism_report_${submissionId}`, reportPayload);
-        localStorage.setItem('prism_latest_report', reportPayload);
-        sessionStorage.setItem(`prism_report_${submissionId}`, reportPayload);
-        router.push(`/report/company/${submissionId}`);
-      } catch (fallbackErr) {
-        alert(err.message || 'Error submitting assessment');
-        setSubmitting(false);
-      }
+      alert(err.message || 'We could not submit your assessment. Your answers are saved; please try again.');
+      setSubmitting(false);
     }
   };
 
