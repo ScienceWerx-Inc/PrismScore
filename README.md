@@ -237,7 +237,7 @@ npm run build
 ## Gap-Closing Courses and Certificates
 
 - After the company assessment (admin) or the C-level diagnostic (executive), each person can build a course at `/learn`. Which gaps it covers is decided by code in `src/lib/courses/plan.ts`: one module per weak area (below 60% for the company; below the role's target level for executives), 2 to 4 modules, each closing with a hands-on workshop and a graded quiz.
-- The model only writes the outline, the lessons and the quizzes (`src/lib/courses/ai.ts`, prompts ported from iStartup). Calls go through Vercel AI Gateway (`AI_MODEL`, default `google/gemini-2.5-flash`). The browser drives the build one model call per request, so no function runs long, and a build resumes where it stopped.
+- The model only writes the outline, the lessons and the quizzes (`src/lib/courses/ai.ts`, prompts ported from iStartup). Calls go straight to the Gemini API with the ScienceWerx Google AI Studio key in `GOOGLE_GENERATIVE_AI_API_KEY` (`AI_MODEL`, default `gemini-3.5-flash`, the model MoreWerx uses with the same key). The browser drives the build one model call per request, so no function runs long, and a build resumes where it stopped.
 - Quizzes: 70% to pass, best of three attempts, answers shown only once the quiz is over. Answer keys never reach the browser before that.
 - Completing every lesson and passing every quiz issues a certificate (`PS-XXXXXXXXXX`, valid six months) that anyone can check at `/verify/<code>`.
 - Admins see each leader's course status and certificates at `/dashboard/curriculum`, with interventions matched to the concerns leaders reported.

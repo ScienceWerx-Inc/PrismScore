@@ -1,5 +1,6 @@
 import 'server-only';
 import { generateText, Output } from 'ai';
+import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import type { GapFocus, GapModule, GapPlan } from './plan';
@@ -14,11 +15,10 @@ import type { GapFocus, GapModule, GapPlan } from './plan';
  * (itself from ScienceWerx's course generator), reframed for an SME leader and
  * their company's AI readiness.
  *
- * Calls go through Vercel AI Gateway. On Vercel it authenticates with the
- * project's OIDC token; locally `vercel env pull` provides VERCEL_OIDC_TOKEN,
- * or set AI_GATEWAY_API_KEY.
+ * Calls go straight to the Gemini API with the ScienceWerx Google AI Studio key
+ * (the same key MoreWerx uses), read from GOOGLE_GENERATIVE_AI_API_KEY.
  */
-export const MODEL = process.env.AI_MODEL || 'google/gemini-2.5-flash';
+export const MODEL = process.env.AI_MODEL || 'gemini-3.5-flash';
 
 /** Prose is read at roughly this rate, which is how a lesson's length is derived. */
 export const WORDS_PER_MINUTE = 160;
@@ -39,7 +39,7 @@ async function generate<S extends z.ZodType>(
   let usage: { inputTokens?: number; outputTokens?: number } | undefined;
   let ok = false;
   try {
-    const res = await generateText({ model: MODEL, temperature, prompt, output: Output.object({ schema }) });
+    const res = await generateText({ model: google(MODEL), temperature, prompt, output: Output.object({ schema }) });
     usage = res.usage;
     if (!res.output) throw new Error(`The model returned no ${kind}.`);
     ok = true;
