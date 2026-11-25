@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { inviteExpiry, newInviteToken } from '@/lib/auth/invites';
 import { hashPassword, passwordProblem } from '@/lib/auth/password';
 import { attachSession, handleAuthError, normalizeEmail } from '@/lib/auth/server';
+import { sendVerificationEmailQuietly } from '@/lib/auth/verifyEmail';
 
 export async function POST(request: Request) {
   try {
@@ -145,6 +146,9 @@ export async function POST(request: Request) {
         details: `Created workspace for ${companyName} with ${executives.length} invited executives`,
       },
     });
+
+    // Sign-up never proves the address is theirs; ask them to confirm it.
+    await sendVerificationEmailQuietly(adminUser, request.url);
 
     return attachSession(
       NextResponse.json({

@@ -13,7 +13,7 @@ export async function GET() {
       select: { id: true, name: true, planStatus: true },
     });
     return NextResponse.json({
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, execRoleTitle: user.execRoleTitle },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, execRoleTitle: user.execRoleTitle, emailVerified: Boolean(user.emailVerifiedAt) },
       company,
     });
   } catch (error) {

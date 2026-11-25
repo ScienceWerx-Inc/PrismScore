@@ -43,6 +43,10 @@ model User {
   /// version they were issued with and stop working when it no longer matches.
   sessionVersion   Int             @default(0)
   lastSignInAt     DateTime?
+  /// Set when the person opens a verification link sent to `email`. Sign-up
+  /// alone never proves the address is theirs; ScienceWerx Connect only ever
+  /// shares data keyed on a verified email.
+  emailVerifiedAt  DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -53,6 +57,17 @@ model User {
   lessonProgress   LessonProgress[]
   quizAttempts     QuizAttempt[]
   certificates     Certificate[]
+  emailVerificationSends EmailVerificationSend[]
+}
+
+/// One row per verification email sent, so sends can be rate-limited per user.
+model EmailVerificationSend {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model Invitation {

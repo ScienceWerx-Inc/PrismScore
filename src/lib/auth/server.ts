@@ -20,7 +20,8 @@ export class AuthError extends Error {
   }
 }
 
-function sessionSecret(): string {
+/** The HMAC secret for session cookies and email verification links. */
+export function sessionSecret(): string {
   const secret = process.env.AUTH_SECRET;
   if (secret && secret.length >= 32) return secret;
   if (process.env.NODE_ENV === 'production') {

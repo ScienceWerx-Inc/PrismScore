@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PrismBrandMark } from '@/components/PrismHero';
 import { CTA, ROUTES } from '@/lib/product';
+import VerifyEmailBanner from '@/components/connect/VerifyEmailBanner';
 
 const NAV_LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
@@ -49,7 +50,7 @@ export default function SiteHeader() {
   const transparent = overHero && !scrolled;
 
   // Who is signed in (null while loading or signed out). Re-checked on navigation.
-  const [me, setMe] = useState<{ name: string; role: string } | null>(null);
+  const [me, setMe] = useState<{ name: string; role: string; emailVerified?: boolean } | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch('/api/auth/me')
@@ -144,6 +145,7 @@ export default function SiteHeader() {
           </div>
         )}
       </div>
+      {me && me.emailVerified === false && !flow && <VerifyEmailBanner />}
     </header>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { issueToken, readToken } from '../auth/token';
+import { EMAIL_VERIFY_TTL_MS, issueEmailVerifyToken, issueToken, readEmailVerifyToken, readToken } from '../auth/token';
 import { hashPassword, passwordProblem, verifyPassword, DUMMY_HASH } from '../auth/password';
 import { inviteIsUsable } from '../auth/invites';
 import { safeNext } from '../clientAuth';
@@ -65,5 +65,37 @@ describe('post-sign-in redirect', () => {
     expect(safeNext('//evil.example')).toBe('/dashboard');
     expect(safeNext('/\\evil.example')).toBe('/dashboard');
     expect(safeNext(null)).toBe('/dashboard');
+  });
+});
+
+describe('email verification tokens', () => {
+  const claims = { userId: 'u1', email: 'me@example.com', expiresAt: Date.now() + 60_000 };
+
+  it('round-trips', () => {
+    expect(readEmailVerifyToken(issueEmailVerifyToken(claims, SECRET), SECRET)).toEqual(claims);
+  });
+
+  it('expires', () => {
+    const token = issueEmailVerifyToken(claims, SECRET);
+    expect(readEmailVerifyToken(token, SECRET, claims.expiresAt + 1)).toBeNull();
+    expect(readEmailVerifyToken(issueEmailVerifyToken({ ...claims, expiresAt: Date.now() - 1 }, SECRET), SECRET)).toBeNull();
+    expect(EMAIL_VERIFY_TTL_MS).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it('is never interchangeable with a session token', () => {
+    const session = issueToken({ userId: 'u1', sessionVersion: 0, expiresAt: Date.now() + 60_000 }, SECRET);
+    const verify = issueEmailVerifyToken(claims, SECRET);
+    expect(readEmailVerifyToken(session, SECRET)).toBeNull();
+    expect(readToken(verify, SECRET)).toBeNull();
+  });
+
+  it('rejects tampering and other secrets', () => {
+    const token = issueEmailVerifyToken(claims, SECRET);
+    const [, sig] = token.split('.');
+    const forged = Buffer.from(JSON.stringify({ p: 'email-verify', u: 'u2', e: 'me@example.com', x: claims.expiresAt })).toString('base64url');
+    expect(readEmailVerifyToken(`${forged}.${sig}`, SECRET)).toBeNull();
+    expect(readEmailVerifyToken(token, 'y'.repeat(40))).toBeNull();
+    expect(readEmailVerifyToken('', SECRET)).toBeNull();
+    expect(readEmailVerifyToken('a.b', SECRET)).toBeNull();
   });
 });
