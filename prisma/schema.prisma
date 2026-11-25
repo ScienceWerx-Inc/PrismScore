@@ -24,6 +24,7 @@ model Company {
   invitations   Invitation[]
   submissions   Submission[]
   payments      Payment[]
+  courses       Course[]
 }
 
 model User {
@@ -48,6 +49,10 @@ model User {
   submissions      Submission[]
   gapRecords       GapRecord[]
   concernProfiles  ConcernProfile[]
+  courses          Course[]
+  lessonProgress   LessonProgress[]
+  quizAttempts     QuizAttempt[]
+  certificates     Certificate[]
 }
 
 model Invitation {
@@ -212,3 +217,144 @@ model AuditLog {
   timestamp DateTime @default(now())
 }
 
+
+// ───────────────────────── Learning: gap-closing courses ─────────────────────────
+// A course is generated for one learner from one completed assessment (the
+// company assessment for an admin, the C-level diagnostic for an executive).
+// Which gaps it covers is decided by code (src/lib/courses/plan.ts); the model
+// only writes the outline, lessons and quizzes.
+
+model Course {
+  id                 String         @id @default(uuid())
+  companyId          String
+  company            Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind               String         // COMPANY, EXECUTIVE
+  sourceSubmissionId String
+  status             String         @default("OUTLINING") // OUTLINING, WRITING, READY, ERROR
+  plan               Json           // GapPlan snapshot the course was written from
+  title              String?
+  subtitle           String?
+  description        String?
+  error              String?
+  stepStartedAt      DateTime?      // lease for the outline step
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  modules            CourseModule[]
+  lessons            Lesson[]
+  certificates       Certificate[]
+
+  @@unique([userId, sourceSubmissionId])
+  @@index([companyId])
+}
+
+model CourseModule {
+  id       String   @id @default(uuid())
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  key      String
+  title    String
+  order    Int
+  lessons  Lesson[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id          String         @id @default(uuid())
+  courseId    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  order       Int            // position across the whole course
+  kind        String         // LESSON, QUIZ
+  title       String
+  brief       String
+  focusIds    Json           // gap question ids this lesson closes
+  durationMin Int
+  isWorkshop  Boolean        @default(false)
+  status      String         @default("PENDING") // PENDING, RUNNING, DONE, ERROR
+  startedAt   DateTime?
+  attempts    Int            @default(0)
+  content     Json?          // LessonContent for LESSON
+  error       String?
+
+  questions   QuizQuestion[]
+  progress    LessonProgress[]
+  quizAttempts QuizAttempt[]
+
+  @@index([courseId])
+}
+
+model QuizQuestion {
+  id               String @id @default(uuid())
+  lessonId         String
+  lesson           Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  order            Int
+  type             String // mcq_single, mcq_multi, true_false
+  stem             String
+  options          Json   // [{ id, label }]
+  correctOptionIds Json   // never sent to a browser before the quiz is over
+  points           Int
+  difficulty       String
+  explanation      String
+
+  @@index([lessonId])
+}
+
+model LessonProgress {
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@id([userId, lessonId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  answers   Json
+  score     Int
+  maxScore  Int
+  percent   Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, lessonId])
+}
+
+model Certificate {
+  code        String    @id // PS-XXXXXXXXXX, printed on the certificate and checked at /verify/<code>
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learnerName String    // snapshots: the certificate states what was true when issued
+  courseTitle String
+  companyName String
+  grade       Int       // average best quiz percent
+  issuedAt    DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@unique([courseId, userId])
+}
+
+model AiUsage {
+  id           String   @id @default(uuid())
+  courseId     String?
+  kind         String   // outline, lesson, quiz
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  ok           Boolean
+  createdAt    DateTime @default(now())
+
+  @@index([courseId])
+}

@@ -1,315 +1,113 @@
 'use client';
 
-import { CTA, ROUTES } from '@/lib/product';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Award, BookOpen, Compass, Loader2, Users } from 'lucide-react';
 import { getActiveCompanyId, withCompany } from '@/lib/activeCompany';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
-import { SHOW_DEV_TOOLS } from '@/lib/flags';
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import {
-  BookOpen,
-  Sparkles,
-  Download,
-  CheckCircle2,
-  Users,
-  Compass,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  Code,
-  Layers,
-  Clock,
-  ChevronRight,
-  Copy,
-  Check,
-} from 'lucide-react';
+
+interface Learner {
+  name: string;
+  role: string;
+  isAdmin: boolean;
+  assessmentDone: boolean;
+  course: { title: string | null; kind: string; status: string; percent: number; certificateCode: string | null } | null;
+}
+
+interface CurriculumData {
+  company: { id: string; name: string };
+  learners: Learner[];
+  interventions: { concern: string; leaders: number; title: string; description: string }[];
+  error?: string;
+}
+
+function statusOf(l: Learner): { label: string; tone: string } {
+  if (!l.assessmentDone) return { label: l.isAdmin ? 'Company assessment not finished' : 'Diagnostic not taken yet', tone: 'text-slate-500' };
+  if (!l.course) return { label: 'Course not started', tone: 'text-amber-700' };
+  if (l.course.certificateCode) return { label: `Certified · ${l.course.certificateCode}`, tone: 'text-emerald-700' };
+  if (l.course.status === 'READY') return { label: `${l.course.percent}% complete`, tone: 'text-brand-700' };
+  if (l.course.status === 'ERROR') return { label: 'Course could not be written', tone: 'text-red-700' };
+  return { label: 'Course being written', tone: 'text-slate-600' };
+}
 
 export default function CurriculumPage() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
-  const [showJson, setShowJson] = useState(false);
+  const [data, setData] = useState<CurriculumData | null>(null);
 
   useEffect(() => {
-    async function loadCurriculum() {
-      try {
-        const res = await fetch(withCompany('/api/curriculum/generate', getActiveCompanyId()));
-        if (redirectIfSignedOut(res)) return;
-        const json = await res.json();
-        setData(json);
-      } catch (e) {
-        console.error('Failed to load curriculum:', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCurriculum();
+    fetch(withCompany('/api/curriculum/generate', getActiveCompanyId())).then(async (res) => {
+      if (redirectIfSignedOut(res)) return;
+      setData(await res.json());
+    });
   }, []);
 
-  const handleCopyJson = () => {
-    if (!data) return;
-    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownloadJson = () => {
-    if (!data) return;
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `executive-gap-curriculum-${data.company?.name || 'company'}.json`;
-    a.click();
-  };
-
-  if (loading) {
+  if (!data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-12">
-        <BookOpen className="w-8 h-8 text-emerald-600 animate-spin mb-4" />
-        <p className="text-slate-600 text-sm">Synthesizing tailored executive curriculum from gap profiles...</p>
+      <div className="flex-1 flex items-center justify-center p-12">
+        <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
       </div>
     );
   }
-
-  if (!data || data.error) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-slate-900 font-bold">We couldn’t find a learning plan for this company.</p>
-        <p className="mt-2 max-w-md text-sm text-slate-600">
-          It may have been removed, or this browser is linked to an older company.
-        </p>
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <Link href={ROUTES.start} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110">
-            {CTA.start}
-          </Link>
-          <Link href={ROUTES.demoDashboard} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-300 hover:bg-white">
-            View the demo dashboard
-          </Link>
-        </div>
-      </div>
-    );
+  if (data.error || !data.company) {
+    return <div className="flex-1 flex items-center justify-center p-12 text-sm text-slate-700">{data.error || 'Not found.'}</div>;
   }
-
-  const { company, executiveTracks, resistanceInterventions, recommendedSolutions } = data;
 
   return (
-    <div className="flex-1 bg-paper py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                Leadership learning plan
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-              Tailored executive curriculum & action plan
-            </h1>
-          </div>
+    <div className="flex-1 bg-paper py-12 px-4">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div>
+          <Link href="/dashboard" className="text-sm text-brand-700 font-semibold">← Dashboard</Link>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-2">Learning plan for {data.company.name}</h1>
+          <p className="text-sm text-slate-600 mt-2 max-w-2xl">
+            Each leader gets a course written from their own results: you from the company assessment, each executive from
+            their C-level diagnostic. Individual answers stay private; you see progress and certificates.
+          </p>
+        </div>
 
-          {SHOW_DEV_TOOLS && (
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={handleCopyJson}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 transition-colors shadow-sm"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied JSON' : 'Copy Course JSON'}
-            </button>
-
-            <button
-              onClick={handleDownloadJson}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Download Gap Payload (.json)
-            </button>
+        <section className="rounded-2xl bg-white border border-slate-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2"><Users className="w-5 h-5 text-brand-600" /> Leaders and their courses</h2>
+            <Link href="/learn" className="text-sm font-bold text-brand-700 inline-flex items-center gap-1">
+              <BookOpen className="w-4 h-4" /> My course
+            </Link>
           </div>
+          <ul className="divide-y divide-slate-100">
+            {data.learners.map((l, i) => {
+              const s = statusOf(l);
+              return (
+                <li key={i} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm">
+                  <span className="font-semibold text-slate-900 sm:w-48">{l.name}</span>
+                  <span className="text-slate-500 sm:w-24">{l.role}</span>
+                  <span className="flex-1 text-slate-700 truncate">{l.course?.title ?? '—'}</span>
+                  <span className={`font-semibold ${s.tone} inline-flex items-center gap-1`}>
+                    {l.course?.certificateCode && <Award className="w-4 h-4" />}
+                    {s.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <section className="rounded-2xl bg-white border border-slate-200 p-5">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2"><Compass className="w-5 h-5 text-brand-600" /> Beyond courses: addressing concerns</h2>
+          <p className="text-xs text-slate-500 mt-1 mb-4">Some resistance is not a knowledge gap. These match the concerns your leaders reported in the diagnostic.</p>
+          {data.interventions.length === 0 ? (
+            <p className="text-sm text-slate-600">No concerns reported yet. They appear once executives complete the diagnostic.</p>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {data.interventions.map((iv) => (
+                <li key={iv.concern} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    {iv.concern} · {iv.leaders} leader{iv.leaders === 1 ? '' : 's'}
+                  </div>
+                  <div className="font-semibold text-slate-900 mt-1">{iv.title}</div>
+                  <p className="text-sm text-slate-600 mt-1">{iv.description}</p>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
-
-        {/* Overview Banner */}
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-900 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
-              Diagnostic-Driven Upskilling
-            </span>
-            <h3 className="text-lg font-bold">
-              Customized for the {company.name} leadership team
-            </h3>
-            <p className="text-xs text-slate-300 max-w-2xl">
-              Generated directly from C-level assessment gap profiles and resistance concerns. Addresses knowledge deficiencies without wasting executive time on commodity basics.
-            </p>
-          </div>
-
-          {SHOW_DEV_TOOLS && (
-          <button
-            onClick={() => setShowJson(!showJson)}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30 self-start md:self-auto flex items-center gap-1.5"
-          >
-            <Code className="w-3.5 h-3.5" />
-            {showJson ? 'Hide Raw JSON' : 'Inspect Course Generator Schema'}
-          </button>
-          )}
-        </div>
-
-        {/* JSON Schema Viewer Modal/Card */}
-        {SHOW_DEV_TOOLS && showJson && (
-          <div className="bg-slate-950 text-emerald-400 rounded-2xl p-6 font-mono text-xs overflow-x-auto border border-emerald-900/60 shadow-inner">
-            <div className="flex justify-between items-center pb-2 mb-3 border-b border-slate-800 text-white/60">
-              <span>// Structured Gap Profile Payload for AI Course Generator</span>
-              <span>application/json</span>
-            </div>
-            <pre>{JSON.stringify(data, null, 2)}</pre>
-          </div>
-        )}
-
-        {/* ROLE-SPECIFIC EXECUTIVE TRACKS */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-xl font-bold text-slate-900">
-              Role-specific executive learning tracks
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {executiveTracks.map((track: any) => (
-              <div
-                key={track.role}
-                className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow space-y-4"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase">
-                      {track.role} Track
-                    </span>
-                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      {track.duration}
-                    </span>
-                  </div>
-
-                  <h3 className="text-base font-bold text-slate-900 leading-snug">
-                    {track.title}
-                  </h3>
-                  <div className="text-xs text-slate-500 mt-1 mb-3">
-                    Assigned to: <strong className="text-slate-800">{track.executiveName}</strong>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {track.competencyGapsAddressed.map((gap: string, gi: number) => (
-                      <span
-                        key={gi}
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700"
-                      >
-                        Target Gap: {gap}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Module List */}
-                  <div className="space-y-2.5 pt-3 border-t border-slate-100">
-                    {track.modules.map((m: any, mi: number) => (
-                      <div key={mi} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
-                        <div className="font-bold text-slate-900">{m.title}</div>
-                        <p className="text-slate-600 mt-1 leading-relaxed">{m.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RESISTANCE INTERVENTIONS (NON-COURSE ROADMAP) */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-          <div className="pb-4 mb-6 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-brand-600" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Resistance interventions
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Leadership resistance isn’t solved with a course. It’s addressed with targeted organizational interventions, facilitated briefings, and de-risked pilots.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {resistanceInterventions.map((item: any, idx: number) => (
-              <div
-                key={idx}
-                className="p-5 rounded-2xl border border-brand-100 bg-brand-50/40 space-y-3 flex flex-col justify-between"
-              >
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-800 block mb-1">
-                    Underlying Concern: {item.concern}
-                  </span>
-                  <h3 className="font-bold text-sm text-slate-900 leading-snug">
-                    {item.interventionType}
-                  </h3>
-                  <div className="text-xs text-brand-600 font-semibold mt-1">
-                    Format: {item.format}
-                  </div>
-                  <p className="text-xs text-slate-600 mt-2">
-                    <strong className="text-slate-700">Objective:</strong> {item.objective}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-brand-200/60 text-[11px] text-slate-500">
-                  Facilitator: {item.facilitator}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* SOLUTION EVALUATION & RECOMMENDATIONS */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-          <div className="pb-4 mb-6 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Tailored ScienceWerx solutions & commercial evaluation
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Objective technical matches based on your organization's specific gap profile and dimension bottlenecks.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {recommendedSolutions.map((sol: any, idx: number) => (
-              <div
-                key={idx}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-brand-200 transition-all space-y-3"
-              >
-                <div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                    {sol.category}
-                  </span>
-                  <h3 className="font-bold text-slate-900 text-sm mt-2">{sol.solutionName}</h3>
-                  <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                    <strong className="text-slate-800">Match Reason:</strong> {sol.matchReason}
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-200">
-                  <span className="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 cursor-pointer">
-                    Request Solution Briefing
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
-
