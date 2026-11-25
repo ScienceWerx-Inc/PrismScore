@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Award, Loader2, Sparkles } from 'lucide-react';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
+import ConnectedApps from '@/components/connect/ConnectedApps';
 
 interface CourseCard {
   id: string;
@@ -142,6 +143,8 @@ export default function LearnPage() {
             );
           })}
         </div>
+
+        <ConnectedApps />
       </div>
     </div>
   );

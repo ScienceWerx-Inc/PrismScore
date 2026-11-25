@@ -1,0 +1,17 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "emailVerifiedAt" TIMESTAMP(3);
+
+-- CreateTable
+CREATE TABLE "EmailVerificationSend" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EmailVerificationSend_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "EmailVerificationSend_userId_createdAt_idx" ON "EmailVerificationSend"("userId", "createdAt");
+
+-- AddForeignKey
+ALTER TABLE "EmailVerificationSend" ADD CONSTRAINT "EmailVerificationSend_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

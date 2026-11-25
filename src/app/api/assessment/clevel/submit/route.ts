@@ -8,6 +8,7 @@ import {
 import { hashPassword, passwordProblem } from '@/lib/auth/password';
 import { attachSession, handleAuthError } from '@/lib/auth/server';
 import { clevelQuestionFilter, usableExecutiveInvite } from '@/lib/auth/clevel';
+import { sendVerificationEmailQuietly } from '@/lib/auth/verifyEmail';
 
 /**
  * POST { token, responses: { questionId: optionId }, password? }
@@ -143,6 +144,9 @@ export async function POST(request: Request) {
 
       return { user, submission };
     });
+
+    // The invitation link proves nothing about who opened it; ask them to confirm the address.
+    if (passwordHash) await sendVerificationEmailQuietly(result.user, request.url);
 
     const res = NextResponse.json({
       success: true,

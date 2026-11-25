@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { redirectIfSignedOut, signInHref } from '@/lib/clientAuth';
+import ConnectedApps from '@/components/connect/ConnectedApps';
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -248,6 +249,8 @@ export default function DashboardPage() {
             </a>
           </div>
         )}
+
+        {company.id !== DEMO_COMPANY_ID && <ConnectedApps />}
 
         {actionMessage && (
           <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
