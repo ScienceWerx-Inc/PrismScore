@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Loader2,
 } from 'lucide-react';
+import { redirectIfSignedOut } from '@/lib/clientAuth';
 
 interface ResultData {
   totalScore: number;
@@ -57,39 +58,11 @@ export default function CompanyReportPage() {
   const cancelCheckoutRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // 1. Instant synchronous hydration from client storage (resilient to serverless container switches)
-    try {
-      let cachedRaw =
-        localStorage.getItem(`prism_report_${submissionId}`) ||
-        sessionStorage.getItem(`prism_report_${submissionId}`);
-      if (!cachedRaw) {
-        // The "latest report" cache may belong to another submission (e.g. on the sample URL)
-        const latest = localStorage.getItem('prism_latest_report');
-        if (latest && JSON.parse(latest)?.submission?.id === submissionId) cachedRaw = latest;
-      }
-
-      if (cachedRaw) {
-        const parsed = JSON.parse(cachedRaw);
-        const sub = parsed.submission || { id: submissionId, completedAt: new Date() };
-        const comp = parsed.company || parsed.submission?.company || { name: 'Your Company', planStatus: 'FREE' };
-        const res = parsed.scoringResult || parsed.result;
-
-        if (res && res.totalScore !== undefined) {
-          setSubmission(sub);
-          setCompany(comp);
-          setResult(res);
-          setQuestions(sub.responses || []);
-          setLoading(false);
-        }
-      }
-    } catch (cacheErr) {
-      console.warn('Local cache read notice:', cacheErr);
-    }
-
-    // 2. Fetch from server to sync DB records
+    // Reports are read from the server only; nothing is cached in the browser.
     async function fetchReport() {
       try {
         const res = await fetch(`/api/report/company/${submissionId}`);
+        if (redirectIfSignedOut(res)) return;
         const data = await res.json();
         if (data.submission && data.result) {
           setSubmission(data.submission);
@@ -98,17 +71,6 @@ export default function CompanyReportPage() {
           setQuestions(data.questions || data.submission.responses || []);
           setLoading(false);
 
-          // Update cache with confirmed server payload
-          try {
-            localStorage.setItem(
-              `prism_report_${submissionId}`,
-              JSON.stringify({
-                submission: data.submission,
-                scoringResult: data.result,
-                company: data.submission.company,
-              })
-            );
-          } catch {}
         }
       } catch (e) {
         console.error('Report server sync note:', e);
@@ -129,8 +91,9 @@ export default function CompanyReportPage() {
       const res = await fetch('/api/payment/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: company.id, amount: ASSESSMENT.fullReportPrice }),
+        body: JSON.stringify({}),
       });
+      if (redirectIfSignedOut(res)) return;
       const data = await res.json();
       if (data.success) {
         setCompany((prev: any) => ({ ...prev, planStatus: 'PAID', paymentStatus: 'PAID' }));

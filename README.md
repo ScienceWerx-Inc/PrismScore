@@ -67,7 +67,7 @@ The composite PrismScore (0 to 500 scale) is calculated using the published weig
 ## Product Architecture and Implementation Phases
 
 ### Phase 0: Foundations and Relational Architecture
-- Next.js 14 App Router, TypeScript, Tailwind CSS, and SQLite powered by Prisma ORM.
+- Next.js 14 App Router, TypeScript, Tailwind CSS, and Postgres powered by Prisma ORM.
 - Normalized data model supporting multi-tenant company workspaces, user roles, tokenized invitations, question banks, submissions, responses, gap records, concern profiles, payments, and audit logs.
 - Seed data loader containing complete question banks for company, C-level, and 360 assessments, plus a preloaded test workspace (Vanguard Systems).
 
@@ -108,7 +108,8 @@ The composite PrismScore (0 to 500 scale) is calculated using the published weig
 - Framework: Next.js 14.2 (App Router, Server Actions, Route Handlers)
 - Language: TypeScript 5.6 (Strict Type Safety)
 - Styling: Tailwind CSS 3.4
-- Database: SQLite with Prisma ORM 5.22
+- Database: Postgres (Prisma Postgres on Vercel) with Prisma ORM 5.22 and versioned migrations
+- Auth: email + password (scrypt) with signed, revocable session cookies (`src/lib/auth`)
 - Unit Testing: Vitest 2.1
 - Icons: Lucide React
 - Visual Effects: Canvas Confetti
@@ -166,6 +167,7 @@ The composite PrismScore (0 to 500 scale) is calculated using the published weig
 
 - Node.js 18.18 or higher (Node.js 20 LTS recommended)
 - npm 9 or higher
+- Postgres 14 or higher running locally
 
 ### Installation
 
@@ -179,9 +181,10 @@ The composite PrismScore (0 to 500 scale) is calculated using the published weig
    npm install
    ```
 
-3. Initialize the SQLite database and generate the Prisma client:
+3. Copy `.env.example` to `.env`, point `DATABASE_URL` at a local database, then apply the migrations:
    ```bash
-   npx prisma db push
+   createdb prismscore_dev
+   npx prisma migrate dev
    ```
 
 4. Seed the database with question banks and the demo workspace:
@@ -228,9 +231,17 @@ npm run build
 - Company Assessment: http://localhost:3000/assessment/company
 - Sample Company Report: http://localhost:3000/report/company/demo-sub-company-1
 - Executive Dashboard: http://localhost:3000/dashboard
-- Executive Diagnostic (Marcus Brody, CTO): http://localhost:3000/assessment/clevel/invite-token-amara-chro
 - Staff 360 Diagnostic: http://localhost:3000/dashboard/three-sixty
 - Tailored Curriculum and Action Engine: http://localhost:3000/dashboard/curriculum
+
+## Authentication and Access
+
+- Company admins create their account in onboarding; invited executives set a password on their invitation link. Sign in at `/sign-in`.
+- Sessions are an HttpOnly cookie signed with `AUTH_SECRET`. Every request re-reads the user, so `POST /api/auth/sign-out {"everywhere":true}` (or deleting the user) ends all their sessions at once. Production refuses to sign sessions without `AUTH_SECRET`.
+- Every API route derives the company from the session. Anonymous visitors can only read the seeded demo workspace (sample report and sample dashboard); it is read-only, and its invitation link is disabled.
+- Invitation links expire after 14 days and work once.
+- Password hashes are omitted from every Prisma query by default (`src/lib/db.ts`).
+- This is a temporary sign-in until PrismScore moves to Firebase Auth; only `src/lib/auth/server.ts` needs to change.
 
 ---
 

@@ -1,10 +1,11 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
 }
 
 model Company {
@@ -35,6 +36,12 @@ model User {
   execRoleTitle    String?         // CEO, CFO, COO, CTO, CMO, CHRO, OTHER
   department       String?         // For 360 staff
   alsoTakesClevel  Boolean         @default(false)
+  /// scrypt hash ("scrypt$<salt>$<key>"); null until the person sets a password.
+  passwordHash     String?
+  /// Bumped on sign-out-everywhere or password change; sessions carry the
+  /// version they were issued with and stop working when it no longer matches.
+  sessionVersion   Int             @default(0)
+  lastSignInAt     DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -59,7 +66,6 @@ model Invitation {
   expiresAt  DateTime?
 
   @@index([companyId])
-  @@index([token])
 }
 
 model AssessmentType {

@@ -1,27 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { CONCERN_TYPES, CONCERN_INTERVENTIONS, ConcernKey } from '@/lib/scoring';
-import { DEMO_COMPANY_ID } from '@/lib/product';
+import { companyAccess, handleAuthError } from '@/lib/auth/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    let companyId = searchParams.get('companyId');
-
-    // Without an explicit companyId, only ever show the seeded demo company.
-    // Never fall back to a real company: that would expose another customer's
-    // executives, emails and scores to anonymous visitors.
-    if (!companyId) {
-      const demoCompany = await prisma.company.findFirst({
-        where: { id: DEMO_COMPANY_ID },
-      });
-      if (!demoCompany) {
-        return NextResponse.json({ error: 'No company found' }, { status: 404 });
-      }
-      companyId = demoCompany.id;
-    }
+    const { companyId } = await companyAccess(new URL(request.url).searchParams.get('companyId'), {
+      allowDemo: true,
+      roles: ['ADMIN'],
+    });
 
     // 1. Fetch Company details
     const company = await prisma.company.findUnique({
@@ -216,9 +205,8 @@ export async function GET(request: Request) {
       awarenessAccuracy: heatmapsUnlocked ? awarenessAccuracy : null,
       executiveGaps,
     });
-  } catch (error: any) {
-    console.error('Dashboard overview error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, 'Dashboard overview error');
   }
 }
 

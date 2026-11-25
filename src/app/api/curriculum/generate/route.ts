@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { DEMO_COMPANY_ID } from '@/lib/product';
+import { companyAccess, handleAuthError } from '@/lib/auth/server';
 import { CONCERN_INTERVENTIONS, ConcernKey } from '@/lib/scoring';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    let companyId = searchParams.get('companyId');
-
-    if (!companyId) {
-      const demoCompany = await prisma.company.findFirst({
-        where: { id: DEMO_COMPANY_ID },
-      });
-      companyId = demoCompany?.id || '';
-    }
+    const { companyId } = await companyAccess(new URL(request.url).searchParams.get('companyId'), {
+      allowDemo: true,
+      roles: ['ADMIN'],
+    });
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
@@ -182,9 +177,8 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json(structuredPayload);
-  } catch (error: any) {
-    console.error('Curriculum generate error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, 'Curriculum generate error');
   }
 }
 

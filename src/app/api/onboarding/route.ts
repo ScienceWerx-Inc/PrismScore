@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import crypto from 'crypto';
+import { inviteExpiry, newInviteToken } from '@/lib/auth/invites';
+import { hashPassword, passwordProblem } from '@/lib/auth/password';
+import { attachSession, handleAuthError, normalizeEmail } from '@/lib/auth/server';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +16,7 @@ export async function POST(request: Request) {
       adminRole,
       alsoTakesClevel,
       executives = [],
+      password,
     } = body;
 
     if (!companyName || !adminEmail) {
@@ -34,6 +37,23 @@ export async function POST(request: Request) {
         { error: 'Invalid admin email address.' },
         { status: 400 }
       );
+    }
+
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) {
+      return NextResponse.json({ error: pwProblem }, { status: 400 });
+    }
+
+    const normalizedAdmin = normalizeEmail(adminEmail)!;
+    const existing = await prisma.user.findUnique({ where: { email: normalizedAdmin } });
+    if (existing) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Please sign in instead.', signIn: true },
+        { status: 409 }
+      );
+    }
+    if (!Array.isArray(executives) || executives.length > 25) {
+      return NextResponse.json({ error: 'Invite at most 25 executives at a time.' }, { status: 400 });
     }
 
     // Check for duplicate executive emails
@@ -58,6 +78,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Create Company
+    const passwordHash = await hashPassword(password);
     const company = await prisma.company.create({
       data: {
         name: companyName,
@@ -72,10 +93,13 @@ export async function POST(request: Request) {
 
     // 2. Create Admin User
     const adminUser = await prisma.user.create({
+      omit: { sessionVersion: false },
       data: {
-        email: adminEmail.toLowerCase().trim(),
+        email: normalizedAdmin,
         name: adminName,
         role: 'ADMIN',
+        passwordHash,
+        lastSignInAt: new Date(),
         companyId: company.id,
         execRoleTitle: adminRole || 'CEO',
         alsoTakesClevel: Boolean(alsoTakesClevel),
@@ -85,7 +109,7 @@ export async function POST(request: Request) {
     // 3. Create Invitations for entered executives
     for (const exec of executives) {
       if (exec.email && exec.name) {
-        const token = crypto.randomBytes(24).toString('hex');
+        const token = newInviteToken();
         await prisma.invitation.create({
           data: {
             companyId: company.id,
@@ -96,6 +120,7 @@ export async function POST(request: Request) {
             token,
             status: 'PENDING',
             invitedBy: adminName,
+            expiresAt: inviteExpiry(),
           },
         });
       }
@@ -121,18 +146,17 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      companyId: company.id,
-      userId: adminUser.id,
-      submissionId: submission.id,
-    });
-  } catch (error: any) {
-    console.error('Onboarding error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to initialize company assessment.' },
-      { status: 500 }
+    return attachSession(
+      NextResponse.json({
+        success: true,
+        companyId: company.id,
+        userId: adminUser.id,
+        submissionId: submission.id,
+      }),
+      adminUser,
     );
+  } catch (error) {
+    return handleAuthError(error, 'Onboarding error');
   }
 }
 

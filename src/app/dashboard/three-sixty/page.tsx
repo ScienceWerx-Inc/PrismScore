@@ -2,6 +2,7 @@
 
 import { CTA, ROUTES } from '@/lib/product';
 import { getActiveCompanyId, withCompany } from '@/lib/activeCompany';
+import { redirectIfSignedOut } from '@/lib/clientAuth';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
@@ -34,6 +35,7 @@ export default function ThreeSixtyPage() {
   const fetchOverview = async () => {
     try {
       const res = await fetch(withCompany('/api/three-sixty', getActiveCompanyId()));
+      if (redirectIfSignedOut(res)) return;
       const json = await res.json();
       setData(json);
     } catch (e) {
@@ -70,12 +72,14 @@ export default function ThreeSixtyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'bulk_invite',
-          companyId: data?.company?.id || getActiveCompanyId(),
           invites,
         }),
       });
+      if (redirectIfSignedOut(res)) return;
       const resData = await res.json();
-      if (resData.success) {
+      if (!resData.success) {
+        alert(resData.error || 'Could not send the invitations.');
+      } else {
         setSuccessMsg(`Sent ${resData.count} staff invitations.`);
         setShowCsvBox(false);
         fetchOverview();

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { calculateCompanyScore, DimensionKey } from '@/lib/scoring';
-import { COMPANY_QUESTIONS } from '@/lib/seed-data';
+import { AuthError, companyAccess, handleAuthError } from '@/lib/auth/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,74 +11,37 @@ export async function GET(
   try {
     const { submissionId } = params;
 
-    let submission = await prisma.submission.findUnique({
+    // The report's company must be the caller's own; anonymous visitors may
+    // only open the public sample report of the demo company.
+    const owner = await prisma.submission.findUnique({
+      where: { id: submissionId },
+      select: { companyId: true, assessmentTypeId: true },
+    });
+    if (!owner || owner.assessmentTypeId !== 'COMPANY') {
+      return NextResponse.json({ error: 'Report not found.' }, { status: 404 });
+    }
+    try {
+      await companyAccess(owner.companyId, { allowDemo: true, roles: ['ADMIN'] });
+    } catch (e) {
+      // Do not reveal that another company's report exists.
+      if (e instanceof AuthError && e.status === 403) {
+        return NextResponse.json({ error: 'Report not found.' }, { status: 404 });
+      }
+      throw e;
+    }
+
+    const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
       include: {
-        company: true,
-        user: true,
+        company: { select: { id: true, name: true, industry: true, sizeBand: true, country: true, planStatus: true } },
+        user: { select: { name: true, execRoleTitle: true } },
         result: true,
-        responses: {
-          include: {
-            question: true,
-            option: true,
-          },
-        },
+        responses: { include: { question: true, option: true } },
       },
     });
 
-    // Never substitute another company's submission for an unknown id: that
-    // would show one customer's report to someone else.
-
-    // Fallback: Reconstruct valid report on-the-fly so serverless container switches never return 404
     if (!submission || !submission.result) {
-      const defaultPoints: Record<DimensionKey, number> = {
-        STRATEGY: 11,
-        USE_VALUE: 9,
-        DATA_TECH: 10,
-        GOVERNANCE: 11,
-        PEOPLE: 9,
-      };
-      const fallbackScoring = calculateCompanyScore(defaultPoints);
-
-      const builtResponses = COMPANY_QUESTIONS.map((q) => {
-        const opt = q.options[Math.min(q.order % 4, q.options.length - 1)];
-        return {
-          id: `resp_${q.id}`,
-          questionId: q.id,
-          optionId: opt.id,
-          question: { id: q.id, text: q.text, dimensionId: q.dimensionId, order: q.order },
-          option: { id: opt.id, text: opt.text, points: opt.points ?? 2 },
-        };
-      });
-
-      const fallbackCompany = {
-        id: 'comp_default',
-        name: 'Executive Assessment',
-        industry: 'Technology & Services',
-        sizeBand: '11-50 employees',
-        country: 'United States',
-        planStatus: 'FREE',
-      };
-
-      return NextResponse.json({
-        submission: {
-          id: submissionId,
-          status: 'COMPLETED',
-          completedAt: new Date().toISOString(),
-          company: fallbackCompany,
-          responses: builtResponses.slice(0, 3), // Gated preview responses for free tier
-        },
-        result: {
-          totalScore: fallbackScoring.totalScore,
-          band: fallbackScoring.band,
-          perDimensionPercentages: fallbackScoring.dimensionPercentages,
-          strengths: fallbackScoring.strengths, // Surface all qualified strengths (Strategy & Governance)
-          moderateGaps: fallbackScoring.moderateGaps,
-          criticalGaps: fallbackScoring.criticalGaps,
-          gaps: [...fallbackScoring.criticalGaps, ...fallbackScoring.moderateGaps],
-          priorityActions: fallbackScoring.priorityActions.slice(0, 1),
-        },
-      });
+      return NextResponse.json({ error: 'This assessment has not been submitted yet.' }, { status: 404 });
     }
 
     const isPaid = (submission.company?.planStatus || 'FREE').toUpperCase() === 'PAID';
@@ -156,8 +118,7 @@ export async function GET(
       },
       result: gatedResult,
     });
-  } catch (error: any) {
-    console.error('Error fetching report:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return handleAuthError(error, 'Report load error');
   }
 }
