@@ -98,11 +98,19 @@ export default function SiteHeader() {
             <div className="flex items-center gap-4 shrink-0">
               {me ? (
                 <>
+                  {me.role === 'ADMIN' && (
+                    <Link
+                      href="/dashboard"
+                      className={`hidden sm:inline rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}
+                    >
+                      Dashboard
+                    </Link>
+                  )}
                   <Link
-                    href="/dashboard"
+                    href="/learn"
                     className={`hidden sm:inline rounded text-sm font-semibold text-white/85 hover:text-white transition-colors ${FOCUS}`}
                   >
-                    Dashboard
+                    Learning
                   </Link>
                   <button
                     type="button"

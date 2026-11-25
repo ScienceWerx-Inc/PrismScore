@@ -158,6 +158,14 @@ export default function CLevelAssessmentPage() {
                   ? ' Sign in with your existing PrismScore account to come back later.'
                   : ' You can close this window.'}
             </p>
+            {signedIn && (
+              <button
+                onClick={() => router.push('/learn')}
+                className="w-full py-3 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:brightness-110 transition-all"
+              >
+                Build my personal learning plan
+              </button>
+            )}
             <button
               onClick={() => router.push('/')}
               className="w-full py-3 rounded-xl font-semibold text-sm text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors"
