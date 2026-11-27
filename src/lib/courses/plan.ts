@@ -63,6 +63,12 @@ export interface GapPlan {
   standing: string;
   /** Concerns the executive raised (resistance layer), used to set the tone. */
   concerns: string[];
+  /**
+   * For an executive: the company's weakest areas from its company assessment,
+   * weakest first, e.g. "Governance and Risk (27%)". Lessons connect the leader's
+   * own gaps to closing these. Empty for the company course itself.
+   */
+  companyFocus?: string[];
   modules: GapModule[];
 }
 
@@ -155,6 +161,7 @@ export function planForExecutive(input: {
   learner: { name: string; role: string };
   answers: Answers;
   concerns: string[];
+  companyFocus?: string[];
 }): GapPlan {
   const role = input.learner.role in DEFAULT_TARGET_LEVELS_BY_ROLE ? input.learner.role : 'OTHER';
   const targets = DEFAULT_TARGET_LEVELS_BY_ROLE[role];
@@ -208,6 +215,7 @@ export function planForExecutive(input: {
     learner: { ...input.learner, role },
     standing: `${role} C-level diagnostic: ${comps.filter((c) => c.gap > 0).length} of ${comps.length} competencies below the ${role} target`,
     concerns: input.concerns,
+    companyFocus: input.companyFocus ?? [],
     modules,
   };
 }

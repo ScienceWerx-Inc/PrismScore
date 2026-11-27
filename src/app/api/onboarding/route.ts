@@ -4,6 +4,7 @@ import { inviteExpiry, newInviteToken } from '@/lib/auth/invites';
 import { hashPassword, passwordProblem } from '@/lib/auth/password';
 import { attachSession, handleAuthError, normalizeEmail } from '@/lib/auth/server';
 import { sendVerificationEmailQuietly } from '@/lib/auth/verifyEmail';
+import { sendExecutiveInvite } from '@/lib/auth/inviteEmail';
 
 export async function POST(request: Request) {
   try {
@@ -107,23 +108,57 @@ export async function POST(request: Request) {
       },
     });
 
-    // 3. Create Invitations for entered executives
+    // 3. Invite each executive (and the admin, if they also take the C-level) to the diagnostic.
+    const invites = [];
     for (const exec of executives) {
       if (exec.email && exec.name) {
-        const token = newInviteToken();
+        invites.push(
+          await prisma.invitation.create({
+            data: {
+              companyId: company.id,
+              name: exec.name,
+              email: exec.email.toLowerCase().trim(),
+              role: 'EXECUTIVE',
+              execRole: exec.role || 'OTHER',
+              token: newInviteToken(),
+              status: 'PENDING',
+              invitedBy: adminName,
+              expiresAt: inviteExpiry(),
+            },
+          }),
+        );
+      }
+    }
+    if (alsoTakesClevel) {
+      // The admin's own diagnostic: same link flow, and they stay the admin when they submit it.
+      invites.push(
         await prisma.invitation.create({
           data: {
             companyId: company.id,
-            name: exec.name,
-            email: exec.email.toLowerCase().trim(),
+            name: adminName,
+            email: normalizedAdmin,
             role: 'EXECUTIVE',
-            execRole: exec.role || 'OTHER',
-            token,
+            execRole: adminRole || 'CEO',
+            token: newInviteToken(),
             status: 'PENDING',
             invitedBy: adminName,
             expiresAt: inviteExpiry(),
           },
-        });
+        }),
+      );
+    }
+
+    // Email the invitations. Email trouble never blocks sign-up; the dashboard can resend.
+    let invitesEmailed = 0;
+    for (const inv of invites) {
+      try {
+        const outcome = await sendExecutiveInvite(inv, { companyName, invitedBy: adminName, origin: new URL(request.url).origin });
+        if (outcome === 'sent') {
+          invitesEmailed += 1;
+          await prisma.invitation.update({ where: { id: inv.id }, data: { status: 'SENT', sentAt: new Date() } });
+        }
+      } catch (e) {
+        console.error('[email] executive invite failed:', (e as Error).name);
       }
     }
 
@@ -156,6 +191,8 @@ export async function POST(request: Request) {
         companyId: company.id,
         userId: adminUser.id,
         submissionId: submission.id,
+        invitesCreated: invites.length,
+        invitesEmailed,
       }),
       adminUser,
     );
