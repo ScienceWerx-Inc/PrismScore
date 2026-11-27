@@ -54,6 +54,7 @@ model User {
   gapRecords       GapRecord[]
   concernProfiles  ConcernProfile[]
   courses          Course[]
+  enrollments      CourseEnrollment[]
   lessonProgress   LessonProgress[]
   quizAttempts     QuizAttempt[]
   certificates     Certificate[]
@@ -76,7 +77,9 @@ model Invitation {
   company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name       String?
   email      String
-  role       String    // EXECUTIVE, STAFF
+  role       String    // EXECUTIVE, STAFF, LEARNER (invited to take a shared company course)
+  /// For LEARNER invitations: the shared course they join.
+  courseId   String?
   execRole   String?   // CEO, CFO, COO, CTO, CMO, CHRO, OTHER
   department String?
   token      String    @unique
@@ -254,12 +257,15 @@ model Course {
   description        String?
   error              String?
   stepStartedAt      DateTime?      // lease for the outline step
+  /// The admin shared this (company) course with the team: enrolled members can take it too.
+  sharedWithTeam     Boolean        @default(false)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
   modules            CourseModule[]
   lessons            Lesson[]
   certificates       Certificate[]
+  enrollments        CourseEnrollment[]
 
   @@unique([userId, sourceSubmissionId])
   @@index([companyId])
@@ -372,4 +378,17 @@ model AiUsage {
   createdAt    DateTime @default(now())
 
   @@index([courseId])
+}
+
+/// Someone other than the course owner who may take it (a team member the admin
+/// shared the company course with). Progress, quizzes and certificates stay per person.
+model CourseEnrollment {
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([courseId, userId])
+  @@index([userId])
 }

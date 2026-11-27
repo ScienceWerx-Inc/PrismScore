@@ -23,7 +23,8 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         users: {
-          where: { role: { in: ['ADMIN', 'EXECUTIVE'] } },
+          // Leaders, plus team members taking the shared company course.
+          where: { OR: [{ role: { in: ['ADMIN', 'EXECUTIVE'] } }, { enrollments: { some: {} } }] },
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -32,6 +33,20 @@ export async function GET(request: Request) {
             execRoleTitle: true,
             concernProfiles: { select: { concernType: true } },
             submissions: { where: { status: 'COMPLETED' }, select: { assessmentTypeId: true } },
+            enrollments: {
+              select: {
+                course: {
+                  select: {
+                    id: true,
+                    kind: true,
+                    status: true,
+                    title: true,
+                    lessons: { select: { id: true } },
+                    certificates: { select: { code: true, issuedAt: true, revokedAt: true, userId: true } },
+                  },
+                },
+              },
+            },
             courses: {
               orderBy: { createdAt: 'desc' },
               select: {
@@ -40,7 +55,7 @@ export async function GET(request: Request) {
                 status: true,
                 title: true,
                 lessons: { select: { id: true } },
-                certificates: { select: { code: true, issuedAt: true, revokedAt: true } },
+                certificates: { select: { code: true, issuedAt: true, revokedAt: true, userId: true } },
               },
             },
           },
@@ -49,7 +64,7 @@ export async function GET(request: Request) {
     });
     if (!company) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
-    const lessonIds = company.users.flatMap((u) => u.courses.flatMap((c) => c.lessons.map((l) => l.id)));
+    const lessonIds = company.users.flatMap((u) => [...u.courses, ...u.enrollments.map((e) => e.course)].flatMap((c) => c.lessons.map((l) => l.id)));
     const progress = await prisma.lessonProgress.groupBy({
       by: ['userId'],
       where: { lessonId: { in: lessonIds } },
@@ -58,14 +73,18 @@ export async function GET(request: Request) {
     const doneByUser = new Map(progress.map((p) => [p.userId, p._count._all]));
 
     const learners = company.users.map((u) => {
-      const course = u.courses[0];
-      const total = u.courses.reduce((s, c) => s + c.lessons.length, 0);
-      const cert = course?.certificates.find((c) => !c.revokedAt);
+      // A leader's own course first; a team member's shared company course otherwise.
+      const mine = [...u.courses, ...u.enrollments.map((e) => e.course)];
+      const course = mine[0];
+      const total = mine.reduce((s, c) => s + c.lessons.length, 0);
+      const cert = course?.certificates.find((c) => c.userId === u.id && !c.revokedAt);
       return {
+        userId: u.id,
+        isTeam: u.role === 'STAFF',
         name: u.name,
         role: u.execRoleTitle || u.role,
         isAdmin: u.role === 'ADMIN',
-        assessmentDone: u.submissions.some((s) => s.assessmentTypeId === (u.role === 'ADMIN' ? 'COMPANY' : 'CLEVEL')),
+        assessmentDone: u.role === 'STAFF' || u.submissions.some((s) => s.assessmentTypeId === (u.role === 'ADMIN' ? 'COMPANY' : 'CLEVEL')),
         course: course
           ? {
               title: course.title,

@@ -7,6 +7,8 @@ import { getActiveCompanyId, withCompany } from '@/lib/activeCompany';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
 
 interface Learner {
+  userId: string;
+  isTeam: boolean;
   name: string;
   role: string;
   isAdmin: boolean;
@@ -75,8 +77,8 @@ export default function CurriculumPage() {
               const s = statusOf(l);
               return (
                 <li key={i} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm">
-                  <span className="font-semibold text-slate-900 sm:w-48">{l.name}</span>
-                  <span className="text-slate-500 sm:w-24">{l.role}</span>
+                  <Link href={`/dashboard/curriculum/${l.userId}`} className="font-semibold text-brand-700 hover:underline sm:w-48">{l.name}</Link>
+                  <span className="text-slate-500 sm:w-24">{l.isTeam ? 'Team' : l.role}</span>
                   <span className="flex-1 text-slate-700 truncate">{l.course?.title ?? '—'}</span>
                   <span className={`font-semibold ${s.tone} inline-flex items-center gap-1`}>
                     {l.course?.certificateCode && <Award className="w-4 h-4" />}

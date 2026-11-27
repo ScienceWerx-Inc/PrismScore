@@ -8,6 +8,7 @@ import {
 import { hashPassword, passwordProblem } from '@/lib/auth/password';
 import { attachSession, handleAuthError } from '@/lib/auth/server';
 import { clevelQuestionFilter, usableExecutiveInvite } from '@/lib/auth/clevel';
+import { autostartCourse } from '@/lib/courses/autostart';
 import { sendVerificationEmailQuietly } from '@/lib/auth/verifyEmail';
 
 /**
@@ -15,6 +16,9 @@ import { sendVerificationEmailQuietly } from '@/lib/auth/verifyEmail';
  * Records an invited executive's C-level diagnostic. When the person has no
  * account yet, `password` creates one and signs them in.
  */
+// The executive's course starts writing after the response (see autostartCourse).
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   try {
     const { token, responses, password } = await request.json();
@@ -148,7 +152,11 @@ export async function POST(request: Request) {
     // The invitation link proves nothing about who opened it; ask them to confirm the address.
     if (passwordHash) await sendVerificationEmailQuietly(result.user, request.url);
 
+    // Every executive with an account gets their course started; it is theirs to open from /learn.
+    const { passwordHash: _ph, sessionVersion: _sv, ...learner } = result.user as typeof result.user & { passwordHash?: string | null };
+    const courseId = await autostartCourse(learner, 'EXECUTIVE');
     const res = NextResponse.json({
+      courseId,
       success: true,
       submissionId: result.submission.id,
       signedIn: Boolean(passwordHash),

@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AlertTriangle, Award, CheckCircle2, Info, Loader2, XCircle } from 'lucide-react';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
+import LessonSlides from '@/components/learn/LessonSlides';
+import MermaidView from '@/components/learn/MermaidView';
 
 interface LessonContent {
   body: string;
   keyPoints: string[];
   callout: { kind: 'warning' | 'note'; text: string };
   exercise: string;
+  mermaid?: string;
   checkpoint: { stem: string; options: { id: string; label: string }[]; correctOptionId: string; explanation: string };
 }
 
@@ -51,6 +54,19 @@ function Lesson({ courseId, lesson, onDone }: { courseId: string; lesson: Lesson
   const c = lesson.content!;
   const [picked, setPicked] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Read or Slides; remembered per browser as a convenience.
+  const [mode, setModeState] = useState<'read' | 'slides'>('read');
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('prism_lesson_mode') === 'slides') setModeState('slides');
+    } catch {}
+  }, []);
+  const setMode = (m: 'read' | 'slides') => {
+    setModeState(m);
+    try {
+      localStorage.setItem('prism_lesson_mode', m);
+    } catch {}
+  };
 
   const complete = async () => {
     setSaving(true);
@@ -63,9 +79,32 @@ function Lesson({ courseId, lesson, onDone }: { courseId: string; lesson: Lesson
 
   return (
     <article className="space-y-6">
+      <div role="tablist" aria-label="Lesson view" className="inline-flex rounded-xl border border-slate-200 bg-white p-1 text-sm font-semibold">
+        {(['read', 'slides'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={mode === m}
+            onClick={() => setMode(m)}
+            className={`px-4 py-1.5 rounded-lg ${mode === m ? 'bg-brand-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            {m === 'read' ? 'Read' : 'Slides'}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'slides' ? (
+        <LessonSlides
+          lesson={{ title: lesson.title, moduleTitle: lesson.moduleTitle, durationMin: lesson.durationMin, isWorkshop: lesson.isWorkshop, content: c }}
+        />
+      ) : (
+      <>
       <div className="space-y-4 text-[15px] text-slate-800">
         <Paragraphs text={c.body} />
       </div>
+
+      {c.mermaid && <MermaidView source={c.mermaid} title={`Diagram: ${lesson.title}`} />}
 
       <div className={`p-4 rounded-2xl border flex gap-3 text-sm ${c.callout.kind === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-brand-50 border-brand-200 text-brand-900'}`}>
         {c.callout.kind === 'warning' ? <AlertTriangle className="w-5 h-5 shrink-0" /> : <Info className="w-5 h-5 shrink-0" />}
@@ -83,6 +122,9 @@ function Lesson({ courseId, lesson, onDone }: { courseId: string; lesson: Lesson
         <h2 className="font-bold text-slate-900 mb-2">{lesson.isWorkshop ? 'Your workshop deliverable' : 'Your exercise this week'}</h2>
         <p className="text-sm text-slate-700 leading-relaxed">{c.exercise}</p>
       </section>
+
+      </>
+      )}
 
       <section className="p-5 rounded-2xl bg-white border border-slate-200">
         <h2 className="font-bold text-slate-900 mb-1">Check yourself</h2>

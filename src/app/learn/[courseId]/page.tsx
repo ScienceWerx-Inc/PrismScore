@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Award, CheckCircle2, Circle, ClipboardCheck, Hammer, Loader2, AlertTriangle } from 'lucide-react';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
+import TeamPanel from '@/components/learn/TeamPanel';
 
 interface LessonRow {
   id: string;
@@ -26,8 +27,12 @@ interface CourseData {
   subtitle: string | null;
   description: string | null;
   percent: number;
+  grade: { percent: number; letter: string } | null;
+  isOwner: boolean;
+  canShare: boolean;
+  sharedWithTeam: boolean;
   modules: { id: string; title: string; lessons: LessonRow[] }[];
-  certificate: { code: string; issuedAt: string; expiresAt: string; grade: number; revoked: boolean } | null;
+  certificate: { code: string; issuedAt: string; expiresAt: string; grade: number; letter: string; revoked: boolean } | null;
 }
 
 /** Parallel build requests; each does at most one model call on the server. */
@@ -51,7 +56,8 @@ export default function CoursePage() {
     return data as CourseData;
   }, [courseId]);
 
-  // Drive the build until the server says the course is ready.
+  // Drive the build until the server says the course is ready. Only the owner builds;
+  // a teammate never sees an unfinished shared course.
   const build = useCallback(async () => {
     if (building.current) return;
     building.current = true;
@@ -87,7 +93,7 @@ export default function CoursePage() {
 
   useEffect(() => {
     load().then((c) => {
-      if (c && (c.status === 'OUTLINING' || c.status === 'WRITING')) build();
+      if (c && c.isOwner && (c.status === 'OUTLINING' || c.status === 'WRITING')) build();
     });
   }, [load, build]);
 
@@ -140,7 +146,14 @@ export default function CoursePage() {
           <div className="p-5 rounded-2xl bg-white border border-slate-200">
             <div className="flex items-center justify-between text-sm font-semibold text-slate-800">
               <span>Your progress</span>
-              <span>{course.percent}%</span>
+              <span>
+                {course.percent}%
+                {course.grade && (
+                  <span className="ml-3 text-slate-600" title={`Average of your best quiz scores: ${course.grade.percent}%`}>
+                    Grade {course.grade.letter} ({course.grade.percent}%)
+                  </span>
+                )}
+              </span>
             </div>
             <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
               <div className="h-full bg-brand-600 transition-all" style={{ width: `${course.percent}%` }} />
@@ -153,7 +166,7 @@ export default function CoursePage() {
             <div className="flex items-center gap-3 text-emerald-900">
               <Award className="w-6 h-6" />
               <div>
-                <div className="font-bold">Certificate earned · grade {course.certificate.grade}%</div>
+                <div className="font-bold">Certificate earned · grade {course.certificate.letter} ({course.certificate.grade}%)</div>
                 <div className="text-xs">No. {course.certificate.code}, valid until {new Date(course.certificate.expiresAt).toLocaleDateString()}</div>
               </div>
             </div>
@@ -164,6 +177,12 @@ export default function CoursePage() {
               View certificate
             </Link>
           </div>
+        )}
+
+        {ready && all.some((l) => l.kind === 'QUIZ' && l.bestPercent != null) && (
+          <Link href={`/learn/${course.id}/review`} className="inline-block text-sm font-semibold text-brand-700">
+            Review the questions you missed →
+          </Link>
         )}
 
         <ol className="space-y-6">
@@ -208,6 +227,8 @@ export default function CoursePage() {
             </li>
           ))}
         </ol>
+
+        {ready && course.canShare && <TeamPanel courseId={course.id} />}
       </div>
     </div>
   );

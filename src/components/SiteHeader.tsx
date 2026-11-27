@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#scoring-formula', label: 'Scoring formula' },
   { href: '/#executive-report', label: 'Executive report' },
+  { href: '/#learning', label: 'Courses' },
   { href: '/#faq', label: 'FAQ' },
 ];
 

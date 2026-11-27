@@ -2,7 +2,7 @@ import 'server-only';
 import { randomBytes } from 'crypto';
 import { prisma } from '@/lib/db';
 import { AuthError, type User } from '@/lib/auth/server';
-import { ownedCourse } from './service';
+import { learnerCourse } from './service';
 import { gradeAttempt, QUIZ_POLICY, certificateExpiry, type QuizKeyItem } from './rules';
 
 /**
@@ -12,7 +12,7 @@ import { gradeAttempt, QUIZ_POLICY, certificateExpiry, type QuizKeyItem } from '
  */
 
 async function readyLesson(user: User, courseId: string, lessonId: string) {
-  const course = await ownedCourse(courseId, user);
+  const course = await learnerCourse(courseId, user);
   if (course.status !== 'READY') throw new AuthError(404, 'This course is still being written.');
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
   if (!lesson || lesson.courseId !== course.id) throw new AuthError(404, 'Lesson not found.');
@@ -172,4 +172,55 @@ export async function verifyCertificate(code: string) {
     expiresAt,
     status: cert.revokedAt ? 'REVOKED' : expiresAt < new Date() ? 'EXPIRED' : 'VALID',
   } as const;
+}
+
+/**
+ * Questions the learner got wrong, for review. Only quizzes that are over for
+ * them (passed, or out of attempts) are included, so this never reveals an
+ * answer key that is still in play. Uses each quiz's best attempt.
+ */
+export async function reviewFor(user: User, courseId: string) {
+  const course = await learnerCourse(courseId, user);
+  const quizzes = await prisma.lesson.findMany({
+    where: { courseId: course.id, kind: 'QUIZ' },
+    orderBy: { order: 'asc' },
+    include: { module: { select: { title: true } }, questions: { orderBy: { order: 'asc' } } },
+  });
+  const attempts = await prisma.quizAttempt.findMany({
+    where: { userId: user.id, lessonId: { in: quizzes.map((q) => q.id) } },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const sections = [];
+  let pending = 0;
+  for (const quiz of quizzes) {
+    const mine = attempts.filter((a) => a.lessonId === quiz.id);
+    const over = mine.some((a) => a.passed) || mine.length >= QUIZ_POLICY.maxAttempts;
+    if (!over) {
+      if (mine.length) pending += 1;
+      continue;
+    }
+    // Best attempt; the latest one wins a tie.
+    const best = mine.reduce((b, a) => (a.percent >= b.percent ? a : b));
+    const answers = (best.answers ?? {}) as Record<string, string[]>;
+    const missed = quiz.questions
+      .map((q) => {
+        const right = q.correctOptionIds as string[];
+        const chosen = Array.isArray(answers[q.id]) ? answers[q.id] : [];
+        const correct = chosen.length === right.length && right.every((id) => chosen.includes(id));
+        return correct
+          ? null
+          : {
+              id: q.id,
+              stem: q.stem,
+              options: q.options as { id: string; label: string }[],
+              chosen,
+              correctOptionIds: right,
+              explanation: q.explanation,
+            };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+    sections.push({ quizId: quiz.id, moduleTitle: quiz.module.title, bestPercent: best.percent, missed });
+  }
+  return { courseTitle: course.title, sections, pendingQuizzes: pending };
 }
