@@ -14,7 +14,7 @@ export type ConnectScope = (typeof CONNECT_SCOPES)[number];
 export const SELF_APP: ConnectApp = 'prismscore';
 
 export const APP_DISPLAY_NAMES: Record<string, string> = {
-  prismscore: 'Prism School',
+  prismscore: 'PrismScore',
   istartup: 'iStartup Score',
   founderfit: 'FounderFit',
   inkeep: 'InkKeep',

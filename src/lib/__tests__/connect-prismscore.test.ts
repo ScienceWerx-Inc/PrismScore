@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/** Prism School as a provider: who is found, and what is shared. Prisma is faked. */
+/** PrismScore as a provider: who is found, and what is shared. Prisma is faked. */
 
 const db = vi.hoisted(() => ({
   user: { findFirst: vi.fn() },
@@ -80,7 +80,7 @@ describe('prismscore provider', () => {
     if (!out.found) throw new Error('expected found');
     expect(out.certificates.map((c) => c.status)).toEqual(['VALID', 'EXPIRED', 'REVOKED']);
     expect(out.certificates[0]).toMatchObject({
-      issuer: 'Prism School',
+      issuer: 'PrismScore',
       title: 'Plan A',
       verifyUrl: 'https://www.prismscore.us/verify/PS-AAAAAAAAAA',
     });

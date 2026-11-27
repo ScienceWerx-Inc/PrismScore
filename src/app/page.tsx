@@ -917,12 +917,12 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
             <Reveal y={16} className="lg:col-span-5">
-              <Kicker>Prism School</Kicker>
+              <Kicker>PrismScore courses</Kicker>
               <h2 className="mt-5 text-4xl sm:text-[44px] font-extrabold leading-[1.05] tracking-[-0.035em] text-ink">
                 Then close the gaps it found.
               </h2>
               <p className="mt-5 max-w-md text-base leading-relaxed text-ink/70">
-                Your score becomes a course. Prism School writes it from your own answers: one module per weak
+                Your score becomes a course. PrismScore writes it from your own answers: one module per weak
                 area, in your industry and role, ready minutes after you finish.
               </p>
               <Link href={ROUTES.start} className={`${PRIMARY_CTA} mt-8`}>

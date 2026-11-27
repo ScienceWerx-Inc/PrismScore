@@ -46,16 +46,16 @@ export async function sendVerificationEmail(
   const text = [
     `Hi ${user.name},`,
     '',
-    'Please confirm this is your email address for Prism School (PrismScore):',
+    'Please confirm this is your email address for PrismScore:',
     '',
     link,
     '',
     'The link works for 24 hours. If you did not create a PrismScore account, you can ignore this email.',
     '',
-    '— Prism School by ScienceWerx',
+    '— PrismScore by ScienceWerx',
   ].join('\n');
 
-  const outcome = await sendEmail(user.email, 'Confirm your email for Prism School', text);
+  const outcome = await sendEmail(user.email, 'Confirm your email for PrismScore', text);
   if (outcome !== 'sent' && process.env.NODE_ENV !== 'production') {
     // Local testing without MoreWerx: the link is printed here and nowhere else.
     console.info(`[email] dev only, verification link: ${link}`);

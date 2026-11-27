@@ -2,7 +2,7 @@ import 'server-only';
 
 /**
  * Transactional email through MoreWerx's partner email API: MoreWerx delivers
- * from its verified domain under the name "Prism School", so PrismScore holds
+ * from its verified domain under the name "PrismScore", so PrismScore holds
  * no mail account of its own. Same pattern as InKeep's sender.
  *
  * Returns 'sent', 'failed' (MoreWerx refused or was unreachable) or 'off'
@@ -10,7 +10,7 @@ import 'server-only';
  * Never throws, and never logs the address or the body (which may hold a link).
  */
 
-const FROM_NAME = 'Prism School';
+const FROM_NAME = 'PrismScore';
 
 export type EmailOutcome = 'sent' | 'failed' | 'off';
 
