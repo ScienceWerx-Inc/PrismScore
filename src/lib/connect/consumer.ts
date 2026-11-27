@@ -4,7 +4,7 @@ import { subjectHash } from './auth';
 import { APP_DISPLAY_NAMES, type ConnectScope, type PeerCard, type PeerCertificate, type PeersResponse } from './types';
 
 /**
- * Consumer side: which peers Prism School shows (spec v1 table) and the merge.
+ * Consumer side: which peers PrismScore shows (spec v1 table) and the merge.
  * Every peer is called in parallel with its own timeout; one that is down, slow,
  * unconfigured or refusing is simply missing from the result.
  */

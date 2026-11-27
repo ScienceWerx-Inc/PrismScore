@@ -74,7 +74,7 @@ export default function JoinCoursePage() {
 
         {invite.hasAccount ? (
           <div className="mt-6 space-y-3">
-            <p className="text-sm text-slate-700">You already have a Prism School account for {invite.email}.</p>
+            <p className="text-sm text-slate-700">You already have a PrismScore account for {invite.email}.</p>
             <button
               type="button"
               onClick={() => join()}

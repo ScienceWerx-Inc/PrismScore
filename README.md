@@ -256,12 +256,12 @@ npm run build
 ## Email Verification
 
 - Sign-up never proved that someone owns the address they typed, so accounts carry `emailVerifiedAt`. A verification link (HMAC-signed with `AUTH_SECRET`, single-purpose, bound to the address, valid 24 hours) is emailed after onboarding and after an invited executive sets their password. Signed-in, unverified users see a banner with "Send a new link" (`POST /api/auth/verify-email/send`, at most 3 per user per hour, counted in `EmailVerificationSend`). The link opens `GET /verify-email?token=…`.
-- Email goes through MoreWerx's partner email API (`MOREWERX_API_URL`, `MOREWERX_PARTNER_KEY`) from "Prism School". Without them nothing is sent; logs never include the address or the link, except that outside production the link is printed to the server console for local testing.
+- Email goes through MoreWerx's partner email API (`MOREWERX_API_URL`, `MOREWERX_PARTNER_KEY`) from "PrismScore". Without them nothing is sent; logs never include the address or the link, except that outside production the link is printed to the server console for local testing.
 - `GET /api/auth/me` includes `emailVerified`.
 
 ## ScienceWerx Connect v1
 
-ScienceWerx apps (Prism School, iStartup, FounderFit, InkKeep, InkGuard) keep their own databases and sign-ins and share display-ready results about the signed-in person only, server to server, matched by verified email. Code is in `src/lib/connect/`.
+ScienceWerx apps (PrismScore, iStartup, FounderFit, InkKeep, InkGuard) keep their own databases and sign-ins and share display-ready results about the signed-in person only, server to server, matched by verified email. Code is in `src/lib/connect/`.
 
 - Provider: `GET /api/connect/v1/summary` and `GET /api/connect/v1/certificates` with `Authorization: Bearer swc_…` and `X-Connect-Subject: <email>`. Checks, in order: key shape (401), known key by SHA-256 with a constant-time compare (401), scope (403), subject email (400). Only accounts with a verified email (outside the demo workspace) are found; anyone else is `200 {"found":false}`. Responses are `Cache-Control: no-store`; each call is logged with the caller, endpoint, a hash of the subject (never the email), found and status.
   - Summary: for an admin, the company PrismScore (score / 500, band, date of the latest completed company assessment); for an executive, their role and whether the C-level diagnostic is done; plus course progress and certificate count.

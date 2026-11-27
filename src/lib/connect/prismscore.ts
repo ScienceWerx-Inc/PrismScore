@@ -7,7 +7,7 @@ import { notFound } from './provider';
 import { SELF_APP, type CertificatesResponse, type ConnectCardLine, type SummaryResponse } from './types';
 
 /**
- * What Prism School tells a peer about one person. Only accounts whose email
+ * What PrismScore tells a peer about one person. Only accounts whose email
  * has been verified are found: otherwise another app could show Prism data
  * from an account the mailbox owner never controlled.
  */
@@ -119,7 +119,7 @@ export async function prismCertificates(email: string): Promise<CertificatesResp
       return {
         code: c.code,
         title: c.courseTitle,
-        issuer: 'Prism School',
+        issuer: 'PrismScore',
         issuedAt: c.issuedAt.toISOString(),
         expiresAt: expiresAt.toISOString(),
         status: c.revokedAt ? 'REVOKED' : expiresAt < now ? 'EXPIRED' : 'VALID',

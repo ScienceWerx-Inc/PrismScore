@@ -100,8 +100,8 @@ export async function shareCourse(
     const link = `${appUrl(origin)}/join/${inv.token}`;
     const outcome = await sendEmail(
       email,
-      `${admin.name} shared a course with you on Prism School`,
-      `Hi,\n\n${admin.name} at ${company.name} shared "${course.title ?? 'a course'}" with you on Prism School, ` +
+      `${admin.name} shared a course with you on PrismScore`,
+      `Hi,\n\n${admin.name} at ${company.name} shared "${course.title ?? 'a course'}" with you on PrismScore, ` +
         `the AI-readiness learning platform by ScienceWerx.\n\nCreate your account and start learning:\n${link}\n\n` +
         `The link works once and expires in 14 days.`,
     );
