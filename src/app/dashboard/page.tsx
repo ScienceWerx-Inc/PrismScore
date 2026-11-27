@@ -94,12 +94,12 @@ export default function DashboardPage() {
       const resData = await res.json();
       if (!resData.success) throw new Error(resData.error);
       if (resData.success) {
-        setActionMessage(`Invitation sent to ${inviteEmail}`);
+        setActionMessage(resData.emailed ? `Invitation emailed to ${inviteEmail}` : `Invitation created for ${inviteEmail}, but the email could not be sent. Share their link from the roster.`);
         setNewInviteModal(false);
         setInviteName('');
         setInviteEmail('');
         fetchDashboard(data?.company?.id);
-        setTimeout(() => setActionMessage(null), 3000);
+        setTimeout(() => setActionMessage(null), 5000);
       }
     } catch (e: any) {
       alert(e?.message || 'Failed to send invitation');
@@ -108,14 +108,17 @@ export default function DashboardPage() {
 
   const handleRemind = async (invitationId: string, email: string) => {
     try {
-      await fetch('/api/invitations', {
+      const res = await fetch('/api/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'remind', invitationId }),
       });
-      setActionMessage(`Reminder sent to ${email}`);
+      const body = await res.json().catch(() => ({}));
+      setActionMessage(
+        !res.ok ? body.error || 'Could not send a reminder.' : body.emailed ? `Reminder emailed to ${email}` : `The email to ${email} could not be sent.`,
+      );
       fetchDashboard(data?.company?.id);
-      setTimeout(() => setActionMessage(null), 3000);
+      setTimeout(() => setActionMessage(null), 5000);
     } catch (e) {
       alert('Error sending reminder');
     }
@@ -131,7 +134,7 @@ export default function DashboardPage() {
       });
       setActionMessage('Invitation revoked');
       fetchDashboard(data?.company?.id);
-      setTimeout(() => setActionMessage(null), 3000);
+      setTimeout(() => setActionMessage(null), 5000);
     } catch (e) {
       alert('Error revoking invitation');
     }

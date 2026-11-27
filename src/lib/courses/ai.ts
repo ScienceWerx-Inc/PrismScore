@@ -92,6 +92,9 @@ const describeLearner = (plan: GapPlan) =>
     `Learner: ${plan.learner.name}, ${plan.learner.role}`,
     `Where they stand: ${plan.standing}`,
     plan.concerns.length ? `Concerns they raised about AI: ${plan.concerns.join('; ')}` : null,
+    plan.companyFocus?.length
+      ? `The company's weakest areas (from its company assessment): ${plan.companyFocus.join('; ')}`
+      : null,
   ]
     .filter(Boolean)
     .join('\n');
@@ -158,6 +161,7 @@ HOW TO BUILD THE OUTLINE
 - Every lesson closes at least one listed gap id, and every gap id is covered by some lesson in its module. Start from where the learner is (their answer) and move them to the levels above it.
 - The LAST lesson of every module is a hands-on workshop: the learner produces something real for their company (a policy, a pilot plan, a vendor checklist, a training plan). Its title is the task.
 - Lessons are about THIS company's situation (industry, size, country, the learner's role), not generic AI advice.
+- When the company's weakest areas are listed, this leader's course is part of fixing them: wherever it fits, tie a lesson's point or workshop to how someone in THIS role moves one of those company areas forward. Never invent company facts beyond what is listed.
 - durationMin is how long the learner spends, between ${MIN_LESSON_MIN} and ${MAX_LESSON_MIN} minutes. Reading runs about ${WORDS_PER_MINUTE} words a minute; a workshop includes the time to do the task.
 
 HARD RULES

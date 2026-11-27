@@ -67,3 +67,29 @@ describe('safeDiagram', () => {
     expect(safeDiagram(undefined)).toEqual({});
   });
 });
+
+import { companyFocusFrom } from '../courses/service';
+import { planForExecutive } from '../courses/plan';
+
+describe('company focus for executive courses', () => {
+  it('lists weak company dimensions, weakest first', () => {
+    expect(companyFocusFrom(JSON.stringify({ STRATEGY: 80, GOVERNANCE: 27, PEOPLE: 40, DATA_TECH: 59.6, USE_VALUE: 60 }))).toEqual([
+      'Governance and Risk (27%)',
+      'People and Skills (40%)',
+      'Data and Technology (60%)',
+    ]);
+    expect(companyFocusFrom(null)).toEqual([]);
+    expect(companyFocusFrom('not json')).toEqual([]);
+    expect(companyFocusFrom(JSON.stringify({ STRATEGY: 90, UNKNOWN: 10 }))).toEqual([]);
+  });
+  it('travels with the executive plan', () => {
+    const plan = planForExecutive({
+      company: { name: 'Acme', industry: 'Logistics', sizeBand: '51-200', country: 'Egypt' },
+      learner: { name: 'Cy', role: 'CTO' },
+      answers: {},
+      concerns: [],
+      companyFocus: ['Governance and Risk (27%)'],
+    });
+    expect(plan.companyFocus).toEqual(['Governance and Risk (27%)']);
+  });
+});

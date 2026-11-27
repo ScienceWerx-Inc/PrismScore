@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { CONCERN_TYPES, type ConcernKey } from '@/lib/scoring';
+import { CONCERN_TYPES, DIMENSIONS, type ConcernKey, type DimensionKey } from '@/lib/scoring';
 import { AuthError, type User } from '@/lib/auth/server';
 import { generateLesson, generateModuleQuiz, generateOutline, type LessonContent } from './ai';
 import { planForCompany, planForExecutive, type Answers, type GapPlan } from './plan';
@@ -51,13 +51,36 @@ async function planFor(user: User, kind: CourseKind, source: NonNullable<Awaited
       answers,
     });
   }
-  const concerns = await prisma.concernProfile.findMany({ where: { userId: user.id } });
+  const [concerns, companyResult] = await Promise.all([
+    prisma.concernProfile.findMany({ where: { userId: user.id } }),
+    prisma.result.findFirst({
+      where: { submission: { companyId: user.companyId, assessmentTypeId: 'COMPANY', status: 'COMPLETED' } },
+      orderBy: { createdAt: 'desc' },
+      select: { perDimensionPercentages: true },
+    }),
+  ]);
   return planForExecutive({
+    companyFocus: companyFocusFrom(companyResult?.perDimensionPercentages),
     company: profile,
     learner,
     answers,
     concerns: Array.from(new Set(concerns.map((c) => CONCERN_TYPES[c.concernType as ConcernKey] ?? c.concernType))),
   });
+}
+
+/** The company's weak dimensions (below 60%), weakest first, as "Name (NN%)". */
+export function companyFocusFrom(perDimension: string | null | undefined): string[] {
+  if (!perDimension) return [];
+  let parsed: Record<string, number>;
+  try {
+    parsed = JSON.parse(perDimension);
+  } catch {
+    return [];
+  }
+  return Object.entries(parsed)
+    .filter(([key, pct]) => typeof pct === 'number' && pct < 60 && key in DIMENSIONS)
+    .sort((a, b) => a[1] - b[1])
+    .map(([key, pct]) => `${DIMENSIONS[key as DimensionKey].name} (${Math.round(pct)}%)`);
 }
 
 /** Creates the learner's course for their latest assessment, or returns the one that exists. */
