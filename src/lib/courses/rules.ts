@@ -36,3 +36,22 @@ export function certificateExpiry(issuedAt: Date): Date {
   d.setUTCMonth(d.getUTCMonth() + CERTIFICATE_VALID_MONTHS);
   return d;
 }
+
+/** iStartup's letter scale over the average best quiz percent. */
+export function letterGrade(percent: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+  if (percent >= 90) return 'A';
+  if (percent >= 80) return 'B';
+  if (percent >= 70) return 'C';
+  if (percent >= 60) return 'D';
+  return 'F';
+}
+
+/**
+ * The course grade: the average of the best attempt on each quiz taken so far.
+ * Null until at least one quiz has been attempted.
+ */
+export function courseGrade(bestByQuiz: number[]): { percent: number; letter: ReturnType<typeof letterGrade> } | null {
+  if (bestByQuiz.length === 0) return null;
+  const percent = Math.round(bestByQuiz.reduce((s, p) => s + p, 0) / bestByQuiz.length);
+  return { percent, letter: letterGrade(percent) };
+}

@@ -25,6 +25,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { redirectIfSignedOut } from '@/lib/clientAuth';
+import LearningPlanCard from '@/components/learn/LearningPlanCard';
 
 interface ResultData {
   totalScore: number;
@@ -291,6 +292,9 @@ export default function CompanyReportPage() {
             </div>
           </div>
         </div>
+
+        {/* The course written from these results (signed-in owner only; hidden on the sample report for visitors) */}
+        <LearningPlanCard />
 
         {/* C-LEVEL TEAM DIAGNOSTIC NEXT STEP (Reciprocity Hook) */}
         <div className="bg-gradient-to-r from-brand-900 via-brand-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white border border-brand-800/60 shadow-lg no-print">

@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { redirectIfSignedOut, signInHref } from '@/lib/clientAuth';
+import LearningPlanCard from '@/components/learn/LearningPlanCard';
 import ConnectedApps from '@/components/connect/ConnectedApps';
 
 export default function DashboardPage() {
@@ -251,6 +252,8 @@ export default function DashboardPage() {
         )}
 
         {company.id !== DEMO_COMPANY_ID && <ConnectedApps />}
+
+        {company.id !== DEMO_COMPANY_ID && <LearningPlanCard />}
 
         {actionMessage && (
           <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
@@ -759,6 +762,13 @@ export default function DashboardPage() {
                 </div>
               </form>
         </Dialog>
+        {company.id !== DEMO_COMPANY_ID && (
+          <div className="pt-6 text-right">
+            <Link href="/account/delete" className="text-xs text-slate-500 hover:text-red-600 underline underline-offset-2">
+              Delete this company
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

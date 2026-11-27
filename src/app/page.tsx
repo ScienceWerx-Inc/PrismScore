@@ -912,6 +912,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* 4a. LEARNING: the course written from your results, and the certificate */}
+      <section id="learning" className="scroll-mt-4 py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+            <Reveal y={16} className="lg:col-span-5">
+              <Kicker>Prism School</Kicker>
+              <h2 className="mt-5 text-4xl sm:text-[44px] font-extrabold leading-[1.05] tracking-[-0.035em] text-ink">
+                Then close the gaps it found.
+              </h2>
+              <p className="mt-5 max-w-md text-base leading-relaxed text-ink/70">
+                Your score becomes a course. Prism School writes it from your own answers: one module per weak
+                area, in your industry and role, ready minutes after you finish.
+              </p>
+              <Link href={ROUTES.start} className={`${PRIMARY_CTA} mt-8`}>
+                {CTA.start}
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </Reveal>
+            <Reveal y={16} delay={0.05} className="lg:col-span-7">
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {[
+                  ['Written from your results', 'Modules target your weakest dimensions; executives get a course from their own C-level gaps.'],
+                  ['Read it or present it', 'Every lesson as text or slides, with diagrams where a process needs one.'],
+                  ['Workshops and graded quizzes', 'Each module ends with something real for your company and a quiz: 70% to pass, three attempts.'],
+                  ['A certificate anyone can check', 'Finish every lesson and quiz to earn a certificate with a number that can be verified online.'],
+                ].map(([title, body]) => (
+                  <li key={title} className="rounded-2xl border border-ink/10 bg-white p-6">
+                    <div className="font-bold text-ink">{title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-ink/70">{body}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 text-sm text-ink/60">
+                Share your company course with your whole team, and{' '}
+                <Link href="/verify" className="font-semibold text-ink underline underline-offset-2">verify a certificate</Link> any time.
+              </p>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       {/* 4b. WHY PRISMSCORE */}
       <section className="relative isolate overflow-hidden bg-ink text-white">
         <ParallaxImage src="/images/why-staircase.png" className="object-[75%_center]" />

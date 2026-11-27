@@ -1,6 +1,7 @@
 import 'server-only';
 import { generateText, Output } from 'ai';
 import { google } from '@ai-sdk/google';
+import { normalizeFlowchart } from './mermaid-source';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import type { GapFocus, GapModule, GapPlan } from './plan';
@@ -193,6 +194,10 @@ const LessonSchema = z.object({
     .string()
     .describe('The lesson, plain-text paragraphs separated by a blank line. No markdown, no headings, no bullet lists.'),
   keyPoints: z.array(z.string()).describe('3 to 5 things the learner should still remember a week later'),
+  mermaid: z
+    .string()
+    .optional()
+    .describe('Mermaid `graph LR` or `graph TD` source for a small diagram, ONLY when the lesson describes a process, a flow or a structure. Omit otherwise.'),
   callout: z.object({
     kind: z.enum(['warning', 'note']),
     text: z.string().describe('One short aside, usually the mistake this lesson exists to prevent'),
@@ -213,6 +218,8 @@ const LessonSchema = z.object({
 export interface LessonContent {
   body: string;
   keyPoints: string[];
+  /** A small flowchart, only when the lesson describes a process or structure. */
+  mermaid?: string;
   callout: { kind: 'warning' | 'note'; text: string };
   exercise: string;
   checkpoint: { stem: string; options: { id: string; label: string }[]; correctOptionId: string; explanation: string };
@@ -276,6 +283,8 @@ HOW TO WRITE IT
 ${input.plan.concerns.length ? '- Take their stated concerns seriously; address them where relevant instead of dismissing them.\n' : ''}- Plain text only. No markdown, no headings, no bullet characters, no bold. Blank lines are the only structure you have.
 - Invent no statistics, studies, dates, quotations or named sources. Teach the idea without the number.
 
+THE DIAGRAM: include \`mermaid\` ONLY if this lesson genuinely describes a process, a flow or a structure (an approval chain, a data flow, a rollout sequence, who decides what). Use \`graph LR\` or \`graph TD\`, at most 8 nodes, short plain labels, one statement per line. A diagram of two boxes restating the title is worse than none; if in doubt, leave it out.
+
 THE EXERCISE: a concrete task the learner does for their own company this week, with a clear deliverable.
 
 THE CHECKPOINT: one question about a situation like theirs, four options with ids "a", "b", "c", "d", exactly one right. It must test whether they understood the IDEA — a question answerable by recognising a phrase from the text tests nothing. Wrong options are things a leader who half-followed would actually pick, not obvious throwaways.`, courseId);
@@ -284,6 +293,7 @@ THE CHECKPOINT: one question about a situation like theirs, four options with id
   return {
     body: toPlainParagraphs(output.body),
     keyPoints: output.keyPoints.slice(0, 5).map((k) => toPlainParagraphs(k)),
+    ...safeDiagram(output.mermaid),
     callout: { kind: output.callout.kind, text: toPlainParagraphs(output.callout.text) },
     exercise: toPlainParagraphs(output.exercise),
     checkpoint: {
@@ -373,4 +383,19 @@ The explanation is required on every question, written to the learner as "you": 
   const questions = gradeableQuestions(output?.questions ?? []);
   if (questions.length < 3) throw new Error('The model returned too few gradeable questions.');
   return questions.slice(0, QUIZ_QUESTIONS);
+}
+
+/**
+ * Keeps a model-written diagram only when it is a small, plain flowchart.
+ * Directives, styling, click handlers and other diagram types are dropped; the
+ * browser also renders it with Mermaid's strict security level.
+ */
+export function safeDiagram(source: string | undefined): { mermaid?: string } {
+  if (!source) return {};
+  const diagram = normalizeFlowchart(source).trim();
+  if (!/^(graph|flowchart)\s+(LR|RL|TD|TB|BT)\b/i.test(diagram)) return {};
+  if (diagram.length > 1500 || diagram.split('\n').length > 24) return {};
+  if (/%%\{|<script|javascript:|href/i.test(diagram)) return {};
+  if (/^\s*(click|style|classDef|class|linkStyle)\b/im.test(diagram)) return {};
+  return { mermaid: diagram };
 }

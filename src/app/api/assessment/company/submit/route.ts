@@ -4,8 +4,11 @@ import { calculateCompanyScore, DimensionKey } from '@/lib/scoring';
 import { COMPANY_QUESTIONS } from '@/lib/seed-data';
 import { companyAccess, handleAuthError } from '@/lib/auth/server';
 import { ownedSubmission } from '@/lib/auth/submissions';
+import { autostartCourse } from '@/lib/courses/autostart';
 
 export const dynamic = 'force-dynamic';
+// The course starts writing after the response (see autostartCourse).
+export const maxDuration = 300;
 
 /**
  * Completes the signed-in admin's company assessment. The score is always
@@ -76,7 +79,8 @@ export async function POST(request: Request) {
       }),
     ]);
 
-    return NextResponse.json({ success: true, submissionId: submission.id, scoringResult: scoring });
+    const courseId = await autostartCourse(user!, 'COMPANY');
+    return NextResponse.json({ success: true, submissionId: submission.id, scoringResult: scoring, courseId });
   } catch (error) {
     return handleAuthError(error, 'Company assessment submit error');
   }

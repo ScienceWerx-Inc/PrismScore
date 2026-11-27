@@ -92,10 +92,55 @@ export async function startCourse(user: User, kind: CourseKind) {
   }
 }
 
+/** The course, if `user` owns it. Only the owner can build it. */
 export async function ownedCourse(courseId: string, user: User) {
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course || course.userId !== user.id) throw new AuthError(404, 'Course not found.');
   return course;
+}
+
+/**
+ * The course, if `user` may take it: they own it, or the admin shared it with the
+ * team and they are enrolled. Everything else (other companies, unshared courses)
+ * answers 404 so ids cannot be probed.
+ */
+export async function learnerCourse(courseId: string, user: User) {
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course) throw new AuthError(404, 'Course not found.');
+  if (course.userId === user.id) return course;
+  if (course.sharedWithTeam && course.companyId === user.companyId) {
+    const enrolled = await prisma.courseEnrollment.findUnique({
+      where: { courseId_userId: { courseId, userId: user.id } },
+    });
+    if (enrolled) return course;
+  }
+  throw new AuthError(404, 'Course not found.');
+}
+
+/**
+ * Builds as much of the course as fits in `budgetMs`, with a few parallel workers,
+ * so a course started right after an assessment is (nearly) ready by the time the
+ * learner opens it. Runs after the response is sent (waitUntil); whatever is left
+ * is finished by the course page's own build loop. Never throws.
+ */
+export async function buildInBackground(courseId: string, user: User, budgetMs = 270_000, workers = 3) {
+  const deadline = Date.now() + budgetMs;
+  const worker = async () => {
+    let failures = 0;
+    while (Date.now() < deadline - 60_000) {
+      try {
+        const step = await buildStep(courseId, user);
+        if (step.status === 'READY' || step.status === 'ERROR') return;
+        if (step.did === 'none') await new Promise((r) => setTimeout(r, 3000));
+        failures = 0;
+      } catch (e) {
+        if (++failures >= 3) return;
+        console.error('Background course build step failed:', e instanceof Error ? e.message : e);
+        await new Promise((r) => setTimeout(r, 4000));
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: workers }, worker));
 }
 
 type StepResult = { status: string; did: 'outline' | 'lesson' | 'quiz' | 'none'; waiting?: boolean };
@@ -194,6 +239,13 @@ export async function buildStep(courseId: string, user: User): Promise<StepResul
 
     try {
       await writeLesson(next.id, lessons, plan, course.id);
+      // The last item written finishes the course right away, so a background build
+      // (or a learner who closed the tab) never leaves it stuck at "writing".
+      const open = await prisma.lesson.count({ where: { courseId: course.id, status: { not: 'DONE' } } });
+      if (open === 0) {
+        await prisma.course.update({ where: { id: course.id }, data: { status: 'READY', error: null } });
+        return { status: 'READY', did: next.kind === 'QUIZ' ? 'quiz' : 'lesson' };
+      }
       return { status: 'WRITING', did: next.kind === 'QUIZ' ? 'quiz' : 'lesson' };
     } catch (e) {
       await prisma.lesson.update({
